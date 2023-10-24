@@ -1,0 +1,35 @@
+// This file contains parts that exclude the possibility of failure even in most extreme applications //
+
+// Failsafe Intake Start //
+
+label Intake_Manifold_Amount(1.0)    // Does not create intake manifolds automatically //
+label Intake_Manifold_Velocity_Decay(1.0)    // Multiplier of intake manifold air rate of velocity loss //
+label Intake_Runners_Optimal_RPM(3600.0)    // Engine speed at which intake runners work the best in theory, in revolutions per minute //
+label Resonance_Waves(30.0)    // Theoretical amount of times the low pressure wave travels through intake runners //
+label Intake_Runner_Length_MM(((((1.0 / (Intake_Runners_Optimal_RPM / 60.0)) * ((720.0 - ((ID0050 / units.deg) + STS0050D)) / 360.0) * 1300.0) / 2.0) / Resonance_Waves) * 304.8)    // Intake runner length, in millimeters //
+label Intake_Plenum_CFM(((Engine_Displacement_CUI * Rev_Limit_RPM) / 3456.0) / Intake_Manifold_Amount)    // Maximum intake plenum flow rate, in cubic feet per minute //
+label Intake_Runner_Cross_Section_Area_CM2(Cylinder_Head_Intake_Port_Cross_Section_Area_CM2)    // Intake runner cross section area, in square centimeters //
+label Intake_Runner_CFM(Intake_Runner_Cross_Section_Area_CM2 * 0.155 * 146.0)    // Maximum intake runner flow rate, in cubic feet per minute //
+label Intake_Plenum_Cross_Section_Area_CM2((((((IVD * Cylinder_Head_Intake_Port_Diameter_Multiplier) / 2.0) * ((IVD * Cylinder_Head_Intake_Port_Diameter_Multiplier) / 2.0) * constants.pi) / 100.0) * IVA) * (Cylinder_Amount / Intake_Manifold_Amount))    // Intake plenum cross section area, in square centimeters //
+label Intake_Plenum_Volume_Multiplier(1.0)    // Multiplier of intake plenum volume in relation to engine displacement //
+label Intake_Plenum_Volume_CC((Engine_Displacement_CC * Intake_Plenum_Volume_Multiplier) / Intake_Manifold_Amount)    // Intake plenum volume, in cubic centimeters //
+label Fuel_Mixture_Adjustment(13.8)    // AFR adjustment //
+label Idle_Throttle_Adjustment(1.0)    // Idle throttle adjustment //
+label Idle_Fuel_Adjusment(0.0)    // Idle fueling adjustment //
+
+// Failsafe Intake End //
+
+// Failsafe Exhaust Start //
+
+label Exhaust_Manifold_Velocity_Decay(1.0)    // Multiplier of exhaust manifold exhaust gases rate of velocity loss //
+label Exhaust_Collector_CFM((((Rev_Limit_RPM * 0.001) * Engine_Displacement_CUI) / 2.0))    // Maximum exhaust flow rate, in cubic feet per minute //
+label Exhaust_Headers_Optimal_RPM(3600.0)    // Engine speed at which exhaust headers work the best in theory, in revolutions per minute //
+label EVO_ATDC(((180.0 * units.deg) - (EVO + (STS0050D / 2.0))) / units.deg)    // Do not touch //
+label Primary_Tube_Cross_Section_Area_CM2(((Single_Cylinder_Displacement_CUI * Exhaust_Headers_Optimal_RPM) / 88200.0) * 6.4516)    // Exhaust primary tube cross section area, in square centimeters //
+label Primary_Tube_Length_MM(((((850.0 * (360.0 - EVO_ATDC)) / Exhaust_Headers_Optimal_RPM) - 3.0) * 25.4) / 2.0)    // Exhaust primary tube length, in millimeters //
+label Collector_Cross_Section_Area_CM2(Primary_Tube_Cross_Section_Area_CM2 / 0.2770083102493075)    // Exhaust collector cross section area, in square centimeters //
+label Collector_Length_MM(Primary_Tube_Length_MM)    // Exhaust collector length, in millimeters //
+label Collector_Volume_CC((Collector_Cross_Section_Area_CM2 * Collector_Length_MM) / 10.0)    // Exhaust collector volume, in cubic centimeters //
+label Exhaust_Primary_CFM(Primary_Tube_Cross_Section_Area_CM2 * 0.155 * 146.0)    // Maximum exhaust header primary tube flow rate, in cubic feet per minute //
+
+// Failsafe Exhaust End //
