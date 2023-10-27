@@ -265,9 +265,9 @@ label Gear_Ratio_1(4.500)    // Does not create gears automatically //
 label Gear_Ratio_2(2.000)    // Does not create gears automatically //
 label Gear_Ratio_3(1.333)    // Does not create gears automatically //
 label Gear_Ratio_4(1.000)    // Does not create gears automatically //
-label Gear_Ratio_5(0.710)    // Does not create gears automatically //
-label Gear_Ratio_6(0.570)    // Does not create gears automatically //
-label Gear_Ratio_7(0.480)    // Does not create gears automatically //
+label Gear_Ratio_5(0.750)    // Does not create gears automatically //
+label Gear_Ratio_6(0.550)    // Does not create gears automatically //
+label Gear_Ratio_7(0.420)    // Does not create gears automatically //
 
 // Transmission Parameters End //
 
