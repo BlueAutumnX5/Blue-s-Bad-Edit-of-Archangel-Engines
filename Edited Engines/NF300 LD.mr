@@ -29,11 +29,11 @@ label Low_Frequency_Noise(1.0)    // Sound simulation low frequency noise //
 label Cylinder_Amount(3.0)    // Cylinder amount. Does not create cylinders automatically //
 label Cylinder_Bank_Amount(3.0)    // Cylinder bank amount. Does not create cylinder banks automatically //
 
-label Bore_MM(108.4)    // Cylinder bore diameter, in millimeters //
-label Stroke_MM(108.4)    // Piston stroke, in millimiters //
+label Bore_MM(50.0)    // Cylinder bore diameter, in millimeters //
+label Stroke_MM(49.5)    // Piston stroke, in millimiters //
 
-label Rev_Limit_RPM(3600.0)    // Maximum engine speed, in revolutions per minute //
-label Rev_Limit_Duration(0.166)    // Ignition cut-off duration, in seconds //
+label Rev_Limit_RPM(8000.0)    // Maximum engine speed, in revolutions per minute //
+label Rev_Limit_Duration(0.0)    // Ignition cut-off duration, in seconds //
 
 label Starter_Speed_RPM(360.0)    // Starter speed, in revolutions per minute //
 label Starter_Torque_NM(265.0)    // Starter torque, in newton meters //
@@ -87,7 +87,7 @@ label Crankshaft_Pulley_Friction_NM(((Crankshaft_Pulley_Mass_G / 1000) * 9.80665
 
 // Flywheel Parameters Start //
 
-label Flywheel_Mass_Multiplier(1.0)    // Flywheel mass multiplier //
+label Flywheel_Mass_Multiplier(2.0)    // Flywheel mass multiplier //
 label Flywheel_Mass_G(((Piston_Mass_G + Connecting_Rod_Mass_G) * Cylinder_Amount) * Flywheel_Mass_Multiplier)    // Flywheel mass, in grams //
 label Flywheel_Diameter_MM(Stroke_MM * 1.5)    // Flywheel diameter, in millimeters //
 label Flywheel_Moment_Of_Inertia(disk_moment_of_inertia(mass: Flywheel_Mass_G * units.g, radius: Flywheel_Diameter_MM * units.mm))    // Do not touch //
@@ -148,7 +148,7 @@ label ELS(100)    // Exhaust Lobe Steps //
 
 // Cylinder Head Parameters Start //
 
-label Compression_Ratio(10.0)    // (Cylinder displacement + Combustion chamber volume)/Combustion chamber volume ratio //
+label Compression_Ratio(9.0)    // (Cylinder displacement + Combustion chamber volume)/Combustion chamber volume ratio //
 label Chamber_Volume_CC(Single_Cylinder_Displacement_CC / (Compression_Ratio - 1.0))    // Combustion chamber volume, in cubic centimeters //
 label Cylinder_Head_Intake_Port_Diameter_Multiplier(0.85)    // Cylinder head intake port diameter/Intake valve diameter ratio multiplier //
 label Cylinder_Head_Intake_Port_Cross_Section_Area_CM2(((constants.pi * ((IVD * Cylinder_Head_Intake_Port_Diameter_Multiplier) * (IVD * Cylinder_Head_Intake_Port_Diameter_Multiplier))) / 400.0) * IVA)    // Cylinder head intake port cross section area, in square centimeters //
@@ -177,7 +177,7 @@ label Intake_Plenum_Cross_Section_Area_CM2((((((IVD * Cylinder_Head_Intake_Port_
 label Intake_Plenum_Volume_Multiplier(1.0)    // Multiplier of intake plenum volume in relation to engine displacement //
 label Intake_Plenum_Volume_CC((Engine_Displacement_CC * Intake_Plenum_Volume_Multiplier) / Intake_Manifold_Amount)    // Intake plenum volume, in cubic centimeters //
 label Fuel_Mixture_Adjustment(13.8)    // AFR adjustment //
-label Idle_Throttle_Adjustment(1.0)    // Idle throttle adjustment //
+label Idle_Throttle_Adjustment(0.9938)    // Idle throttle adjustment //
 label Idle_Fuel_Adjusment(0.0)    // Idle fueling adjustment //
 
 // Intake Parameters End //
