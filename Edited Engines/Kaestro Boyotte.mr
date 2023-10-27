@@ -17,7 +17,7 @@ impulse_response_library ir_lib()
 
 // Simulation Parameters Start //
 
-label Simulation_Frequency(36200)    // Simulation frequency, in hertz //
+label Simulation_Frequency(40000)    // Simulation frequency, in hertz //
 label High_Frequency_Gain(0.01)    // Sound simulation high frequency gain //
 label High_Frequency_Noise(1.0)    // Sound simulation  high frequency noise //
 label Low_Frequency_Noise(1.0)    // Sound simulation low frequency noise //
@@ -29,14 +29,14 @@ label Low_Frequency_Noise(1.0)    // Sound simulation low frequency noise //
 label Cylinder_Amount(1.0)    // Cylinder amount. Does not create cylinders automatically //
 label Cylinder_Bank_Amount(1.0)    // Cylinder bank amount. Does not create cylinder banks automatically //
 
-label Bore_MM(108.4)    // Cylinder bore diameter, in millimeters //
-label Stroke_MM(108.4)    // Piston stroke, in millimiters //
+label Bore_MM(146.0)    // Cylinder bore diameter, in millimeters //
+label Stroke_MM(146.0)    // Piston stroke, in millimiters //
 
 label Rev_Limit_RPM(6000.0)    // Maximum engine speed, in revolutions per minute //
 label Rev_Limit_Duration(0.166)    // Ignition cut-off duration, in seconds //
 
 label Starter_Speed_RPM(300.0)    // Starter speed, in revolutions per minute //
-label Starter_Torque_NM(300.0)    // Starter torque, in newton meters //
+label Starter_Torque_NM(4000.0)    // Starter torque, in newton meters //
 
 // Main Parameters End //
 
@@ -120,7 +120,7 @@ label IVL(10.0)    // Intake valve lift, in millimeters //
 label EVL(10.0)    // Exhaust valve lift, in millimeters //
 
 label IVO(0.0 * units.deg)    // Intake valve opening, measured at 0.050 inches, degrees before top dead center //
-label IVC(0.0 * units.deg)    // Intake valve closing, measured at 0.050 inches, degress after bottom dead center //
+label IVC(3.0 * units.deg)    // Intake valve closing, measured at 0.050 inches, degress after bottom dead center //
 
 label EVO(0.0 * units.deg)    // Exhaust valve opening, measured at 0.050 inches, degrees before bottom dead center //
 label EVC(0.0 * units.deg)    // Exhaust valve closing, measured at 0.050 inches, degrees after top dead center //
@@ -176,8 +176,8 @@ label Intake_Runner_CFM(Intake_Runner_Cross_Section_Area_CM2 * 0.155 * 146.0)   
 label Intake_Plenum_Cross_Section_Area_CM2((((((IVD * Cylinder_Head_Intake_Port_Diameter_Multiplier) / 2.0) * ((IVD * Cylinder_Head_Intake_Port_Diameter_Multiplier) / 2.0) * constants.pi) / 100.0) * IVA) * (Cylinder_Amount / Intake_Manifold_Amount))    // Intake plenum cross section area, in square centimeters //
 label Intake_Plenum_Volume_Multiplier(1.0)    // Multiplier of intake plenum volume in relation to engine displacement //
 label Intake_Plenum_Volume_CC((Engine_Displacement_CC * Intake_Plenum_Volume_Multiplier) / Intake_Manifold_Amount)    // Intake plenum volume, in cubic centimeters //
-label Fuel_Mixture_Adjustment(9.0)    // AFR adjustment //
-label Idle_Throttle_Adjustment(0.9962)    // Idle throttle adjustment //
+label Fuel_Mixture_Adjustment(11.0)    // AFR adjustment //
+label Idle_Throttle_Adjustment(0.995)    // Idle throttle adjustment //
 label Idle_Fuel_Adjusment(0.0)    // Idle fueling adjustment //
 
 // Intake Parameters End //
@@ -603,9 +603,13 @@ public node Engine {
     function timing_curve(500 * units.rpm)
     timing_curve
         .add_sample(0 * units.rpm, 0 * units.deg)
-        .add_sample(500 * units.rpm, 0 * units.deg)
-        .add_sample(1000 * units.rpm, 0 * units.deg)
-        .add_sample(1500 * units.rpm, 0 * units.deg)
+        .add_sample(300 * units.rpm, 0 * units.deg)
+        .add_sample(500 * units.rpm, 10 * units.deg)
+        .add_sample(1000 * units.rpm, 20 * units.deg)
+        .add_sample(1500 * units.rpm, 30 * units.deg)
+        .add_sample(2000 * units.rpm, 60 * units.deg)
+        .add_sample(3000 * units.rpm, 90 * units.deg)
+        .add_sample(4000 * units.rpm, 90 * units.deg)
 
     engine.add_ignition_module(
         Engine_Distributor(
