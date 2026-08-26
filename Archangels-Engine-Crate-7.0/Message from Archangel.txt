@@ -1,0 +1,33 @@
+So, even without my direct presence the promised LTSP#7.0 managed to find you.
+Take this moment to praise Pilot for willing to middleman everything.
+
+
+Now, let me clarify a few things about the future:
+
+ -Pilot01 is from now on responsible for handling of all releases. 
+ Any feedback and bug reports that you wish to deliver to me can be delivered via him.
+ I doubt that my direct contact methods would be convenient to most, if anyone at all, so I picked someone I trust. This means that you can trust him too - if you trust me, that is.
+	
+ -LTSP#7.0 is the last planned major release.
+ There are no more planned releases, but if ES3D takes too long to release and I happen to have enough free time and inspiration - something might happen.
+
+
+With future out of the way, I now shall elaborate on why you are reading this now.
+Well, during the golden era of CEPs and LTSPs, 10-16 hours a day used to go into fiddling with the sim, researching, testing, and development overall. I am no longer able to allocate this much time.
+I have a job, friends, and real life in general. This leaves me with occasional weekend or a few hours during the week to develop stuff. Obviously, I can no longer provide the same amount of quantity and quality with so much less time.
+...
+...
+...
+But, it is all thanks to you all. Our almost 3 year long run with these silly .mr files is what shaped my life. It is the people I met during my time in the server that influenced my decisions, altered my views, and in general shifted the direction of my life.
+Would you believe that the ES Official discord server started an insane butterfly effect causing me to buy a car, go on adventures, grow massive friend groups, land an awesome job, and even change as a person? Probably not, but that is exactly what happened.
+Therefore it is not you who should thank me for the packs, but me who should thank you for everything in my life. I gave you a few lines of code, you gave me a life in return. For that I am eternally grateful to everyone in the ES community. 
+
+Before I leave, I will tell you this - Do what you love, chase your dreams, become the person you want to be, and never give up!
+Archangel out.
+
+
+
+
+ 
+
+

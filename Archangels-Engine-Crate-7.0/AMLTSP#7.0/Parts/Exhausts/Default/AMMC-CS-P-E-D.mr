@@ -1,0 +1,37 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine part made by Archangel Motors //
+
+
+
+// Default exhaust. Ensures maximum simulation stability and best sound quality. Provides sufficient volumetric flow rate assuming proper engine design. Compatible with all AMMC-CS Reciprocating engines. //
+
+
+// Installation: Override corresponding parts of code in your engine file with the provided code. Make sure to use the right header amount and collector size. //
+
+
+
+// Part Start //
+
+label EH_N(1.0)    // Exhaust headers amount. Does not create exhaust headers automatically. //
+label EH_VDm(1.0)    // Exhaust headers velocity decay multiplier. Determines the rate of exhaust gases velocity loss inside the exhaust headers. //
+label EH_BMm(0.0)    // Exhaust headers backflow mixing. Determines the tendency of exhaust gases to flow back into the cylinder. 0.0 is absence of backflow. //
+
+label EHPT_Somega(3600.0)    // Exhaust headers primary tube scavenging optimal RPM. Determines the engine speed at which the exhaust headers primary tube scavenge the best in theory. //
+label EHPT_L(((((850.0 * (360.0 - EV_Oatdc)) / EHPT_Somega) - 3.0) * 25.4) - CHEP_L)    // Exhaust headers primary tube length. Calculated automatically, but can be overridden. Units: millimeters. //
+label EHPT_A(CHEPO_A)    // Exhaust headers primary tube cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label EHPT_Qmax(EHPT_A * 0.155 * 146.0)    // Exhaust headers primary tube theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Calculated automatically. Mathematical dependency. Do not tamper. // 
+label EHPT_Q(CHEPT_Qmax * 0.95)    // Exhaust headers primary tube actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+
+label EHC_L((EHPT_L + CHEP_L) / 2.0)    // Exhaust headers collector length. Calculated automatically, but can be overridden. Units: millimeters. //
+label EHC_A(((EHPT_Q * EC_N) / 0.155 / 146.0) / EH_N)    // Exhaust headers collector cross section area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label EHC_Qmax(EHC_A * 0.155 * 146.0)    // Exhaust headers collector theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Calculated automatically. Mathematical dependency. Do not tamper. // 
+label EHC_Q((EHPT_Q * EC_N) / EH_N)    // Exhaust headers collector actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+label EHC_V((EHC_A * EHC_L) / 10.0)    // Exhaust headers collector volume. Calculated automatically. Do not tamper. //
+
+label EP_A(EHC_A)    // Exhaust pipe cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters //
+label EP_L(4000.0)    // Exhaust pipe length. Units: millimeters //
+label EP_V((EP_A * EP_L) / 10.0)    // Exhaust pipe volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+
+// Part End //

@@ -1,0 +1,21 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine part made by Archangel Motors //
+
+
+
+// Failsafe exhaust headers primary tube and collector patch. Compatible with all AMMC-CS Reciprocating engines. //
+
+
+// Installation: Override corresponding parts of code in your engine file with the provided code. //
+
+
+
+// Part Start //
+
+label EHPT_L((((850.0 * (360.0 - EV_Oatdc)) / EHPT_Somega) - 3.0) * 25.4)    // Exhaust headers primary tube length. Calculated automatically. Units: millimeters. Do not tamper.//
+
+label EHC_L(EHPT_L  / 2.0)    // Exhaust headers collector length. Calculated automatically. Units: millimeters. Do not tamper. //
+
+// Part End //

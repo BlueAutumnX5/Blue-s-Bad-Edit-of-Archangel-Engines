@@ -1,0 +1,213 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine part made by Archangel Motors //
+
+// Lobe generator made by Oror //
+// Discord: ororx //
+// Youtube: https://www.youtube.com/@orwhat //
+
+
+
+// Camshaft lobes generated with Oror's Lobe Generator. Compatible with all AMMC-CS Reciprocating engines //
+// Lobes from different kits can be used together //
+
+
+// Advertised duration: 315/315 //
+// Duration at 0.050in: 230/230 //
+// Valve lift: 14.0/14.0 //
+// Lobe Separation Angle: Adjustable //
+// Camshaft Advance: Adjustable //
+
+
+// Installation: Override corresponding parts of code in your engine file with the provided code //
+
+
+
+// Part Start //
+
+label IV_L(14.0)    // Intake valve lift. Units: millimeters. Override is impossible, do not tamper. //
+label EV_L(14.0)    // Exhaust valve lift. Units: millimeters. Override is impossible, do not tamper. //
+
+
+
+label CSL_Salpha(105.0 * units.deg)    // Camshaft lobe separation angle. Units: Degrees. This line has no counterpart in the default code. Add it anywhere in the valvetrain parameters. //
+label CS_AR(0.0 * units.deg)    // Camshaft advance/retard. Units: Degrees of crankshaft rotation. This line has no counterpart in the default code. Add it anywhere in the valvetrain parameters. //
+
+label ID(230.0 * units.deg)    // Total intake duration at 0.050 inches of intake valve lift. Calculated automatically. Units: degrees of crankshaft rotation. Do not tamper. //
+label ED(230.0 * units.deg)    // Total exhaust duration at 0.050 inches of exhaust valve lift. Calculated automatically. Units: degrees of crankshaft rotation. Do not tamper. //
+
+label IV_O(-1.0 * ((CSL_Salpha - CS_AR) - (ID / 2.0)))    // Intake valve opening event. Measured at 0.050 inches of intake valve lift. Units: degrees of crankshaft rotation before top dead center. Override is impossible, do not tamper. //
+label IV_C(((CSL_Salpha - CS_AR) + (ID / 2.0)) - (180 * units.deg))    // Intake valve closing event. Measured at 0.050 inches of intake valve lift. Units: degrees of crankshaft rotation after bottom dead center. Override is impossible, do not tamper. //
+
+label EV_O(((CSL_Salpha + CS_AR) + (ED / 2.0)) - (180 * units.deg))    // Exhaust valve opening event. Measured at 0.050 inches of exhaust valve lift. Units: degrees of crankshaft rotation before bottom dead center. Override is impossible, do not tamper. //
+label EV_C(-1.0 * ((CSL_Salpha + CS_AR) - (ED / 2.0)))    // Exhaust valve closing event. Measured at 0.050 inches of exhaust valve lift. Units: degrees of crankshaft rotation after top dead center. Override is impossible, do not tamper. //
+
+label ID_delta(0.0)    // Difference between intake duration measured at 0.050 inches or lift specified in Oror's Lobe Generator parameters and 0.001 millimeters of intake valve lift. Units: degrees of crankshaft rotation. //    // Optional 85.0 Degrees override for this kit of camshaft lobes. //
+label ED_delta(0.0)    // Difference between exhaust duration measured at 0.050 inches or lift specified in Oror's Lobe Generator parameters and 0.001 millimeters of intake valve lift. Units: degrees of crankshaft rotation. //    // Optional 85.0 Degrees override for this kit of camshaft lobes. //
+
+
+
+/*
+{
+  "cam_cfg": {
+    "es_version": "0.1.14a",
+    "resolution": 63,
+    "intake_volume": 0.16,
+    "exhaust_volume": 0.16,
+    "intake_at_lift": 1.27,
+    "exhaust_at_lift": 1.27,
+    "intake_trim": 0.95,
+    "exhaust_trim": 0.95,
+    "intake_sigma": 1.546,
+    "exhaust_sigma": 1.546,
+    "intake_base_mult": 1.5,
+    "exhaust_base_mult": 1.5,
+    "intake_cos": true,
+    "exhaust_cos": true,
+    "equal_base_radius": true,
+    "ramp_steepness": 5.0,
+    "ramp_position": 0.152,
+    "lift_significant_fraction": 100.0,
+    "roller_tappet_radius": 0.1
+  }
+}
+*/
+
+
+
+public node Engine_Camshaft_Intake_Lobe {
+    // lobes.py v0.9f
+    alias output __out: _lobe_profile;
+    function _lobe_profile(2.670 * units.deg)
+        _lobe_profile
+        .add_sample(-80.089 * units.deg, 0.000 * units.mm)
+        .add_sample(-77.420 * units.deg, 0.117 * units.mm)
+        .add_sample(-74.750 * units.deg, 0.208 * units.mm)
+        .add_sample(-72.080 * units.deg, 0.310 * units.mm)
+        .add_sample(-69.411 * units.deg, 0.436 * units.mm)
+        .add_sample(-66.741 * units.deg, 0.580 * units.mm)
+        .add_sample(-64.071 * units.deg, 0.745 * units.mm)
+        .add_sample(-61.402 * units.deg, 0.934 * units.mm)
+        .add_sample(-58.732 * units.deg, 1.155 * units.mm)
+        .add_sample(-56.063 * units.deg, 1.410 * units.mm)
+        .add_sample(-53.393 * units.deg, 1.726 * units.mm)
+        .add_sample(-50.723 * units.deg, 2.113 * units.mm)
+        .add_sample(-48.054 * units.deg, 2.558 * units.mm)
+        .add_sample(-45.384 * units.deg, 3.066 * units.mm)
+        .add_sample(-42.714 * units.deg, 3.639 * units.mm)
+        .add_sample(-40.045 * units.deg, 4.278 * units.mm)
+        .add_sample(-37.375 * units.deg, 4.982 * units.mm)
+        .add_sample(-34.705 * units.deg, 5.747 * units.mm)
+        .add_sample(-32.036 * units.deg, 6.565 * units.mm)
+        .add_sample(-29.366 * units.deg, 7.423 * units.mm)
+        .add_sample(-26.696 * units.deg, 8.306 * units.mm)
+        .add_sample(-24.027 * units.deg, 9.193 * units.mm)
+        .add_sample(-21.357 * units.deg, 10.061 * units.mm)
+        .add_sample(-18.688 * units.deg, 10.877 * units.mm)
+        .add_sample(-16.018 * units.deg, 11.607 * units.mm)
+        .add_sample(-13.348 * units.deg, 12.329 * units.mm)
+        .add_sample(-10.679 * units.deg, 12.968 * units.mm)
+        .add_sample(-8.009 * units.deg, 13.445 * units.mm)
+        .add_sample(-5.339 * units.deg, 13.757 * units.mm)
+        .add_sample(-2.670 * units.deg, 13.928 * units.mm)
+        .add_sample(0.000 * units.deg, 14.000 * units.mm)
+        .add_sample(2.670 * units.deg, 13.928 * units.mm)
+        .add_sample(5.339 * units.deg, 13.757 * units.mm)
+        .add_sample(8.009 * units.deg, 13.445 * units.mm)
+        .add_sample(10.679 * units.deg, 12.968 * units.mm)
+        .add_sample(13.348 * units.deg, 12.329 * units.mm)
+        .add_sample(16.018 * units.deg, 11.607 * units.mm)
+        .add_sample(18.688 * units.deg, 10.877 * units.mm)
+        .add_sample(21.357 * units.deg, 10.061 * units.mm)
+        .add_sample(24.027 * units.deg, 9.193 * units.mm)
+        .add_sample(26.696 * units.deg, 8.306 * units.mm)
+        .add_sample(29.366 * units.deg, 7.423 * units.mm)
+        .add_sample(32.036 * units.deg, 6.565 * units.mm)
+        .add_sample(34.705 * units.deg, 5.747 * units.mm)
+        .add_sample(37.375 * units.deg, 4.982 * units.mm)
+        .add_sample(40.045 * units.deg, 4.278 * units.mm)
+        .add_sample(42.714 * units.deg, 3.639 * units.mm)
+        .add_sample(45.384 * units.deg, 3.066 * units.mm)
+        .add_sample(48.054 * units.deg, 2.558 * units.mm)
+        .add_sample(50.723 * units.deg, 2.113 * units.mm)
+        .add_sample(53.393 * units.deg, 1.726 * units.mm)
+        .add_sample(56.063 * units.deg, 1.410 * units.mm)
+        .add_sample(58.732 * units.deg, 1.155 * units.mm)
+        .add_sample(61.402 * units.deg, 0.934 * units.mm)
+        .add_sample(64.071 * units.deg, 0.745 * units.mm)
+        .add_sample(66.741 * units.deg, 0.580 * units.mm)
+        .add_sample(69.411 * units.deg, 0.436 * units.mm)
+        .add_sample(72.080 * units.deg, 0.310 * units.mm)
+        .add_sample(74.750 * units.deg, 0.208 * units.mm)
+        .add_sample(77.420 * units.deg, 0.117 * units.mm)
+        .add_sample(80.089 * units.deg, 0.000 * units.mm)
+}
+
+public node Engine_Camshaft_Exhaust_Lobe {
+    // lobes.py v0.9f
+    alias output __out: _lobe_profile;
+    function _lobe_profile(2.670 * units.deg)
+        _lobe_profile
+        .add_sample(-80.089 * units.deg, 0.000 * units.mm)
+        .add_sample(-77.420 * units.deg, 0.117 * units.mm)
+        .add_sample(-74.750 * units.deg, 0.208 * units.mm)
+        .add_sample(-72.080 * units.deg, 0.310 * units.mm)
+        .add_sample(-69.411 * units.deg, 0.436 * units.mm)
+        .add_sample(-66.741 * units.deg, 0.580 * units.mm)
+        .add_sample(-64.071 * units.deg, 0.745 * units.mm)
+        .add_sample(-61.402 * units.deg, 0.934 * units.mm)
+        .add_sample(-58.732 * units.deg, 1.155 * units.mm)
+        .add_sample(-56.063 * units.deg, 1.410 * units.mm)
+        .add_sample(-53.393 * units.deg, 1.726 * units.mm)
+        .add_sample(-50.723 * units.deg, 2.113 * units.mm)
+        .add_sample(-48.054 * units.deg, 2.558 * units.mm)
+        .add_sample(-45.384 * units.deg, 3.066 * units.mm)
+        .add_sample(-42.714 * units.deg, 3.639 * units.mm)
+        .add_sample(-40.045 * units.deg, 4.278 * units.mm)
+        .add_sample(-37.375 * units.deg, 4.982 * units.mm)
+        .add_sample(-34.705 * units.deg, 5.747 * units.mm)
+        .add_sample(-32.036 * units.deg, 6.565 * units.mm)
+        .add_sample(-29.366 * units.deg, 7.423 * units.mm)
+        .add_sample(-26.696 * units.deg, 8.306 * units.mm)
+        .add_sample(-24.027 * units.deg, 9.193 * units.mm)
+        .add_sample(-21.357 * units.deg, 10.061 * units.mm)
+        .add_sample(-18.688 * units.deg, 10.877 * units.mm)
+        .add_sample(-16.018 * units.deg, 11.607 * units.mm)
+        .add_sample(-13.348 * units.deg, 12.329 * units.mm)
+        .add_sample(-10.679 * units.deg, 12.968 * units.mm)
+        .add_sample(-8.009 * units.deg, 13.445 * units.mm)
+        .add_sample(-5.339 * units.deg, 13.757 * units.mm)
+        .add_sample(-2.670 * units.deg, 13.928 * units.mm)
+        .add_sample(0.000 * units.deg, 14.000 * units.mm)
+        .add_sample(2.670 * units.deg, 13.928 * units.mm)
+        .add_sample(5.339 * units.deg, 13.757 * units.mm)
+        .add_sample(8.009 * units.deg, 13.445 * units.mm)
+        .add_sample(10.679 * units.deg, 12.968 * units.mm)
+        .add_sample(13.348 * units.deg, 12.329 * units.mm)
+        .add_sample(16.018 * units.deg, 11.607 * units.mm)
+        .add_sample(18.688 * units.deg, 10.877 * units.mm)
+        .add_sample(21.357 * units.deg, 10.061 * units.mm)
+        .add_sample(24.027 * units.deg, 9.193 * units.mm)
+        .add_sample(26.696 * units.deg, 8.306 * units.mm)
+        .add_sample(29.366 * units.deg, 7.423 * units.mm)
+        .add_sample(32.036 * units.deg, 6.565 * units.mm)
+        .add_sample(34.705 * units.deg, 5.747 * units.mm)
+        .add_sample(37.375 * units.deg, 4.982 * units.mm)
+        .add_sample(40.045 * units.deg, 4.278 * units.mm)
+        .add_sample(42.714 * units.deg, 3.639 * units.mm)
+        .add_sample(45.384 * units.deg, 3.066 * units.mm)
+        .add_sample(48.054 * units.deg, 2.558 * units.mm)
+        .add_sample(50.723 * units.deg, 2.113 * units.mm)
+        .add_sample(53.393 * units.deg, 1.726 * units.mm)
+        .add_sample(56.063 * units.deg, 1.410 * units.mm)
+        .add_sample(58.732 * units.deg, 1.155 * units.mm)
+        .add_sample(61.402 * units.deg, 0.934 * units.mm)
+        .add_sample(64.071 * units.deg, 0.745 * units.mm)
+        .add_sample(66.741 * units.deg, 0.580 * units.mm)
+        .add_sample(69.411 * units.deg, 0.436 * units.mm)
+        .add_sample(72.080 * units.deg, 0.310 * units.mm)
+        .add_sample(74.750 * units.deg, 0.208 * units.mm)
+        .add_sample(77.420 * units.deg, 0.117 * units.mm)
+        .add_sample(80.089 * units.deg, 0.000 * units.mm)
+}

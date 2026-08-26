@@ -1,0 +1,262 @@
+
+// oror's port_flow_v.py (v. 1.3) cylinder head CFM flow math modified for extra tweaking. //
+// Non-native math functions have been pre-computed to work with .mr limitations. //
+// Resolution Pre Saturation/Post Saturation: 16/16 //
+
+// oror Cylinder Head Parameters Start //
+
+// oror Setup Parameters Start //
+
+label I_Pf(1.0) // Intake valve flow multiplier ("power factor"). //
+label I_Cd(7.0 / I_Pf) // Intake valve area curtain divisor. //
+label IL_d(3.0) // Intake logarithm influence divisor. Controls the non-linearity of the flow between zero lift and the intake lift saturation point. //
+label E_Pf(1.0) // Exhaust valve flow multiplier ("power factor"). //
+label E_Cd(7.0 / E_Pf) // Exhaust valve area curtain divisor. //
+label EL_d(3.0) // Exhaust logarithm influence divisor. Controls the non-linearity of the flow between zero lift and the intake lift saturation point. //
+
+// oror Setup Parameters End //
+
+label IPTV_R(0.85) // Cylinder head intake port diameter to valve diameter ratio. //
+label IV_Ds(IV_D / 5.0) // Intake valve stem diameter. Calculated automatically, but can be overridden. Units: Millimeters //
+label IV_Ah(constants.pi * (IV_D * 0.98 * IPTV_R) * (IV_D * 0.98 * IPTV_R) / 4.0) // Intake valve head area without valve stem. Calculated automatically, override only if you are a professional. Units: square millimeters. //
+label IV_As(constants.pi * IV_Ds * IV_Ds / 4.0) // Intake Valve Stem Area // Intake valve stem area. Calculated automatically, override only if you are a professional. Units: square millimeters. //
+label IV_At(IV_Ah - IV_As) // Intake Valve Total Area // Total intake valve head area including valve stem. Calculated automatically, override only if you are a professional. Units: square millimeters. //
+label IV_Lsat(IV_At / (constants.pi * IV_D * 0.98 * IPTV_R)) // The lift at which the intake flow becomes saturated. Units: Millimeters. Mathematical dependence. Do not tamper. //
+
+label EPTV_R(0.85) // Cylinder head exhaust port diameter to valve diameter ratio. //
+label EV_Ds(EV_D / 5.0) // Exhaust valve stem diameter. Calculated automatically, but can be overridden. Units: Millimeters //
+label EV_Ah(constants.pi * (EV_D * 0.98 * EPTV_R) * (EV_D * 0.98 * EPTV_R) / 4.0) // Exhaust valve head area without valve stem. Calculated automatically, override only if you are a professional. Units: square millimeters. //
+label EV_As(constants.pi * EV_Ds * EV_Ds / 4.0) // Exhaust valve stem area. Calculated automatically, override only if you are a professional. Units: square millimeters. //
+label EV_At(EV_Ah - EV_As) // Total exhaust valve head area including valve stem. Calculated automatically, override only if you are a professional. Units: square millimeters. //
+label EV_Lsat(EV_At / (constants.pi * EV_D * 0.98 * EPTV_R)) // The lift at which the exhaust flow becomes saturated. Units: Millimeters. Mathematical dependence. Do not tamper. //
+
+// oror Cylinder Head Parameters End //
+
+public node Engine_Cylinder_Head {
+    input intake_camshaft;
+    input exhaust_camshaft;
+    input flip_display: false;
+    alias output __out: head;
+
+    label IV_L_1(IV_Lsat  * 1.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_2(IV_Lsat  * 2.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_3(IV_Lsat  * 3.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_4(IV_Lsat  * 4.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_5(IV_Lsat  * 5.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_6(IV_Lsat  * 6.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_7(IV_Lsat  * 7.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_8(IV_Lsat  * 8.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_9(IV_Lsat  * 9.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_10(IV_Lsat * 10.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_11(IV_Lsat * 11.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_12(IV_Lsat * 12.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_13(IV_Lsat * 13.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_14(IV_Lsat * 14.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_15(IV_Lsat * 15.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_16(IV_Lsat * 16.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_17(IV_Lsat * 17.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_18(IV_Lsat * 18.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_19(IV_Lsat * 19.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_20(IV_Lsat * 20.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_21(IV_Lsat * 21.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_22(IV_Lsat * 22.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_23(IV_Lsat * 23.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_24(IV_Lsat * 24.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_25(IV_Lsat * 25.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_26(IV_Lsat * 26.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_27(IV_Lsat * 27.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_28(IV_Lsat * 28.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_29(IV_Lsat * 29.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_30(IV_Lsat * 30.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_31(IV_Lsat * 31.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label IV_L_32(IV_Lsat * 32.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+
+    label EV_L_1(EV_Lsat  * 1.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_2(EV_Lsat  * 2.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_3(EV_Lsat  * 3.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_4(EV_Lsat  * 4.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_5(EV_Lsat  * 5.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_6(EV_Lsat  * 6.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_7(EV_Lsat  * 7.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_8(EV_Lsat  * 8.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_9(EV_Lsat  * 9.00 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_10(EV_Lsat * 10.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_11(EV_Lsat * 11.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_12(EV_Lsat * 12.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_13(EV_Lsat * 13.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_14(EV_Lsat * 14.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_15(EV_Lsat * 15.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_16(EV_Lsat * 16.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_17(EV_Lsat * 17.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_18(EV_Lsat * 18.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_19(EV_Lsat * 19.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_20(EV_Lsat * 10.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_21(EV_Lsat * 21.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_22(EV_Lsat * 22.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_23(EV_Lsat * 23.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_24(EV_Lsat * 24.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_25(EV_Lsat * 25.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_26(EV_Lsat * 26.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_27(EV_Lsat * 27.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_28(EV_Lsat * 28.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_29(EV_Lsat * 29.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_30(EV_Lsat * 30.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_31(EV_Lsat * 31.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+    label EV_L_32(EV_Lsat * 32.0 / 16.0)    // Mathematical dependence. Do not tamper. //
+
+    label AIVCB(IV_D * 0.98 * IPTV_R * constants.pi / I_Cd)    // Mathematical dependence. Do not tamper. //
+    label AIVC_0(AIVCB  * 0.000)     // Mathematical dependence. Do not tamper. //
+    label AIVC_1(AIVCB  * IV_L_1)    // Mathematical dependence. Do not tamper. //
+    label AIVC_2(AIVCB  * IV_L_2)    // Mathematical dependence. Do not tamper. //
+    label AIVC_3(AIVCB  * IV_L_3)    // Mathematical dependence. Do not tamper. //
+    label AIVC_4(AIVCB  * IV_L_4)    // Mathematical dependence. Do not tamper. //
+    label AIVC_5(AIVCB  * IV_L_5)    // Mathematical dependence. Do not tamper. //
+    label AIVC_6(AIVCB  * IV_L_6)    // Mathematical dependence. Do not tamper. //
+    label AIVC_7(AIVCB  * IV_L_7)    // Mathematical dependence. Do not tamper. //
+    label AIVC_8(AIVCB  * IV_L_8)    // Mathematical dependence. Do not tamper. //
+    label AIVC_9(AIVCB  * IV_L_9)    // Mathematical dependence. Do not tamper. //
+    label AIVC_10(AIVCB * IV_L_10)   // Mathematical dependence. Do not tamper. //
+    label AIVC_11(AIVCB * IV_L_11)   // Mathematical dependence. Do not tamper. //
+    label AIVC_12(AIVCB * IV_L_12)   // Mathematical dependence. Do not tamper. //
+    label AIVC_13(AIVCB * IV_L_13)   // Mathematical dependence. Do not tamper. //
+    label AIVC_14(AIVCB * IV_L_14)   // Mathematical dependence. Do not tamper. //
+    label AIVC_15(AIVCB * IV_L_15)   // Mathematical dependence. Do not tamper. //
+    label AIVC_16(AIVCB * IV_L_16)   // Mathematical dependence. Do not tamper. //
+    label AIVC_17(AIVCB * IV_L_17)   // Mathematical dependence. Do not tamper. //
+    label AIVC_18(AIVCB * IV_L_18)   // Mathematical dependence. Do not tamper. //
+    label AIVC_19(AIVCB * IV_L_19)   // Mathematical dependence. Do not tamper. //
+    label AIVC_20(AIVCB * IV_L_20)   // Mathematical dependence. Do not tamper. //
+    label AIVC_21(AIVCB * IV_L_21)   // Mathematical dependence. Do not tamper. //
+    label AIVC_22(AIVCB * IV_L_22)   // Mathematical dependence. Do not tamper. //
+    label AIVC_23(AIVCB * IV_L_23)   // Mathematical dependence. Do not tamper. //
+    label AIVC_24(AIVCB * IV_L_24)   // Mathematical dependence. Do not tamper. //
+    label AIVC_25(AIVCB * IV_L_25)   // Mathematical dependence. Do not tamper. //
+    label AIVC_26(AIVCB * IV_L_26)   // Mathematical dependence. Do not tamper. //
+    label AIVC_27(AIVCB * IV_L_27)   // Mathematical dependence. Do not tamper. //
+    label AIVC_28(AIVCB * IV_L_28)   // Mathematical dependence. Do not tamper. //
+    label AIVC_29(AIVCB * IV_L_29)   // Mathematical dependence. Do not tamper. //
+    label AIVC_30(AIVCB * IV_L_30)   // Mathematical dependence. Do not tamper. //
+    label AIVC_31(AIVCB * IV_L_31)   // Mathematical dependence. Do not tamper. //
+    label AIVC_32(AIVCB * IV_L_32)   // Mathematical dependence. Do not tamper. //
+
+    label AEVCB(EV_D * 0.98 * EPTV_R * constants.pi / E_Cd)    // Mathematical dependence. Do not tamper. //
+    label AEVC_0(AEVCB  * 0.000)     // Mathematical dependence. Do not tamper. //
+    label AEVC_1(AEVCB  * EV_L_1)    // Mathematical dependence. Do not tamper. //
+    label AEVC_2(AEVCB  * EV_L_2)    // Mathematical dependence. Do not tamper. //
+    label AEVC_3(AEVCB  * EV_L_3)    // Mathematical dependence. Do not tamper. //
+    label AEVC_4(AEVCB  * EV_L_4)    // Mathematical dependence. Do not tamper. //
+    label AEVC_5(AEVCB  * EV_L_5)    // Mathematical dependence. Do not tamper. //
+    label AEVC_6(AEVCB  * EV_L_6)    // Mathematical dependence. Do not tamper. //
+    label AEVC_7(AEVCB  * EV_L_7)    // Mathematical dependence. Do not tamper. //
+    label AEVC_8(AEVCB  * EV_L_8)    // Mathematical dependence. Do not tamper. //
+    label AEVC_9(AEVCB  * EV_L_9)    // Mathematical dependence. Do not tamper. //
+    label AEVC_10(AEVCB * EV_L_10)   // Mathematical dependence. Do not tamper. //
+    label AEVC_11(AEVCB * EV_L_11)   // Mathematical dependence. Do not tamper. //
+    label AEVC_12(AEVCB * EV_L_12)   // Mathematical dependence. Do not tamper. //
+    label AEVC_13(AEVCB * EV_L_13)   // Mathematical dependence. Do not tamper. //
+    label AEVC_14(AEVCB * EV_L_14)   // Mathematical dependence. Do not tamper. //
+    label AEVC_15(AEVCB * EV_L_15)   // Mathematical dependence. Do not tamper. //
+    label AEVC_16(AEVCB * EV_L_16)   // Mathematical dependence. Do not tamper. //
+    label AEVC_17(AEVCB * EV_L_17)   // Mathematical dependence. Do not tamper. //
+    label AEVC_18(AEVCB * EV_L_18)   // Mathematical dependence. Do not tamper. //
+    label AEVC_19(AEVCB * EV_L_19)   // Mathematical dependence. Do not tamper. //
+    label AEVC_20(AEVCB * EV_L_20)   // Mathematical dependence. Do not tamper. //
+    label AEVC_21(AEVCB * EV_L_21)   // Mathematical dependence. Do not tamper. //
+    label AEVC_22(AEVCB * EV_L_22)   // Mathematical dependence. Do not tamper. //
+    label AEVC_23(AEVCB * EV_L_23)   // Mathematical dependence. Do not tamper. //
+    label AEVC_24(AEVCB * EV_L_24)   // Mathematical dependence. Do not tamper. //
+    label AEVC_25(AEVCB * EV_L_25)   // Mathematical dependence. Do not tamper. //
+    label AEVC_26(AEVCB * EV_L_26)   // Mathematical dependence. Do not tamper. //
+    label AEVC_27(AEVCB * EV_L_27)   // Mathematical dependence. Do not tamper. //
+    label AEVC_28(AEVCB * EV_L_28)   // Mathematical dependence. Do not tamper. //
+    label AEVC_29(AEVCB * EV_L_29)   // Mathematical dependence. Do not tamper. //
+    label AEVC_30(AEVCB * EV_L_30)   // Mathematical dependence. Do not tamper. //
+    label AEVC_31(AEVCB * EV_L_31)   // Mathematical dependence. Do not tamper. //
+    label AEVC_32(AEVCB * EV_L_32)   // Mathematical dependence. Do not tamper. //
+
+    function intake_flow((IV_Lsat / 16.0) * units.mm)
+    intake_flow
+        .add_flow_sample(0.0, 0.0)
+        .add_flow_sample((IV_L_1),  AIVC_1  * (1.0 + (2.772588722240 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_2),  AIVC_2  * (1.0 + (2.079441541680 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_3),  AIVC_3  * (1.0 + (1.673976433572 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_4),  AIVC_4  * (1.0 + (1.386294361120 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_5),  AIVC_5  * (1.0 + (1.163150809806 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_6),  AIVC_6  * (1.0 + (0.980829253012 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_7),  AIVC_7  * (1.0 + (0.826678573184 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_8),  AIVC_8  * (1.0 + (0.693147180560 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_9),  AIVC_9  * (1.0 + (0.575364144904 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_10), AIVC_10 * (1.0 + (0.470003629246 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_11), AIVC_11 * (1.0 + (0.374693449441 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_12), AIVC_12 * (1.0 + (0.287682072452 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_13), AIVC_13 * (1.0 + (0.207639364778 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_14), AIVC_14 * (1.0 + (0.133531392625 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_15), AIVC_15 * (1.0 + (0.064538521138 / IL_d)) * IV_N)
+        .add_flow_sample((IV_L_16), AIVC_16 *  1.0  * IV_N)
+        .add_flow_sample((IV_L_17), AIVC_17 * ((IV_Lsat / IV_L_17) + ((IV_L_17 - IV_Lsat) / (10.0 * IV_L_17 * (IV_L_17 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_18), AIVC_18 * ((IV_Lsat / IV_L_18) + ((IV_L_18 - IV_Lsat) / (10.0 * IV_L_18 * (IV_L_18 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_19), AIVC_19 * ((IV_Lsat / IV_L_19) + ((IV_L_19 - IV_Lsat) / (10.0 * IV_L_19 * (IV_L_19 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_20), AIVC_20 * ((IV_Lsat / IV_L_20) + ((IV_L_20 - IV_Lsat) / (10.0 * IV_L_20 * (IV_L_20 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_21), AIVC_21 * ((IV_Lsat / IV_L_21) + ((IV_L_21 - IV_Lsat) / (10.0 * IV_L_21 * (IV_L_21 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_22), AIVC_22 * ((IV_Lsat / IV_L_22) + ((IV_L_22 - IV_Lsat) / (10.0 * IV_L_22 * (IV_L_22 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_23), AIVC_23 * ((IV_Lsat / IV_L_23) + ((IV_L_23 - IV_Lsat) / (10.0 * IV_L_23 * (IV_L_23 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_24), AIVC_24 * ((IV_Lsat / IV_L_24) + ((IV_L_24 - IV_Lsat) / (10.0 * IV_L_24 * (IV_L_24 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_25), AIVC_25 * ((IV_Lsat / IV_L_25) + ((IV_L_25 - IV_Lsat) / (10.0 * IV_L_25 * (IV_L_25 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_26), AIVC_26 * ((IV_Lsat / IV_L_26) + ((IV_L_26 - IV_Lsat) / (10.0 * IV_L_26 * (IV_L_26 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_27), AIVC_27 * ((IV_Lsat / IV_L_27) + ((IV_L_27 - IV_Lsat) / (10.0 * IV_L_27 * (IV_L_27 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_28), AIVC_28 * ((IV_Lsat / IV_L_28) + ((IV_L_28 - IV_Lsat) / (10.0 * IV_L_28 * (IV_L_28 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_29), AIVC_29 * ((IV_Lsat / IV_L_29) + ((IV_L_29 - IV_Lsat) / (10.0 * IV_L_29 * (IV_L_29 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_30), AIVC_30 * ((IV_Lsat / IV_L_30) + ((IV_L_30 - IV_Lsat) / (10.0 * IV_L_30 * (IV_L_30 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_31), AIVC_31 * ((IV_Lsat / IV_L_31) + ((IV_L_31 - IV_Lsat) / (10.0 * IV_L_31 * (IV_L_31 + 1.0)))) * IV_N)
+        .add_flow_sample((IV_L_32), AIVC_32 * ((IV_Lsat / IV_L_32) + ((IV_L_32 - IV_Lsat) / (10.0 * IV_L_32 * (IV_L_32 + 1.0)))) * IV_N)
+
+    function exhaust_flow((EV_Lsat / 16.0) * units.mm)
+    exhaust_flow
+        .add_flow_sample(0.0, 0.0)
+        .add_flow_sample((EV_L_1),  AEVC_1  * (1.0 + (2.772588722240 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_2),  AEVC_2  * (1.0 + (2.079441541680 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_3),  AEVC_3  * (1.0 + (1.673976433572 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_4),  AEVC_4  * (1.0 + (1.386294361120 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_5),  AEVC_5  * (1.0 + (1.163150809806 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_6),  AEVC_6  * (1.0 + (0.980829253012 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_7),  AEVC_7  * (1.0 + (0.826678573184 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_8),  AEVC_8  * (1.0 + (0.693147180560 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_9),  AEVC_9  * (1.0 + (0.575364144904 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_10), AEVC_10 * (1.0 + (0.470003629246 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_11), AEVC_11 * (1.0 + (0.374693449441 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_12), AEVC_12 * (1.0 + (0.287682072452 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_13), AEVC_13 * (1.0 + (0.207639364778 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_14), AEVC_14 * (1.0 + (0.133531392625 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_15), AEVC_15 * (1.0 + (0.064538521138 / EL_d)) * EV_N)
+        .add_flow_sample((EV_L_16), AEVC_16 *  1.0  * EV_N)
+        .add_flow_sample((EV_L_17), AEVC_17 * ((EV_Lsat / EV_L_17) + ((EV_L_17 - EV_Lsat) / (10.0 * EV_L_17 * (EV_L_17 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_18), AEVC_18 * ((EV_Lsat / EV_L_18) + ((EV_L_18 - EV_Lsat) / (10.0 * EV_L_18 * (EV_L_18 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_19), AEVC_19 * ((EV_Lsat / EV_L_19) + ((EV_L_19 - EV_Lsat) / (10.0 * EV_L_19 * (EV_L_19 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_20), AEVC_20 * ((EV_Lsat / EV_L_20) + ((EV_L_20 - EV_Lsat) / (10.0 * EV_L_20 * (EV_L_20 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_21), AEVC_21 * ((EV_Lsat / EV_L_21) + ((EV_L_21 - EV_Lsat) / (10.0 * EV_L_21 * (EV_L_21 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_22), AEVC_22 * ((EV_Lsat / EV_L_22) + ((EV_L_22 - EV_Lsat) / (10.0 * EV_L_22 * (EV_L_22 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_23), AEVC_23 * ((EV_Lsat / EV_L_23) + ((EV_L_23 - EV_Lsat) / (10.0 * EV_L_23 * (EV_L_23 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_24), AEVC_24 * ((EV_Lsat / EV_L_24) + ((EV_L_24 - EV_Lsat) / (10.0 * EV_L_24 * (EV_L_24 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_25), AEVC_25 * ((EV_Lsat / EV_L_25) + ((EV_L_25 - EV_Lsat) / (10.0 * EV_L_25 * (EV_L_25 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_26), AEVC_26 * ((EV_Lsat / EV_L_26) + ((EV_L_26 - EV_Lsat) / (10.0 * EV_L_26 * (EV_L_26 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_27), AEVC_27 * ((EV_Lsat / EV_L_27) + ((EV_L_27 - EV_Lsat) / (10.0 * EV_L_27 * (EV_L_27 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_28), AEVC_28 * ((EV_Lsat / EV_L_28) + ((EV_L_28 - EV_Lsat) / (10.0 * EV_L_28 * (EV_L_28 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_29), AEVC_29 * ((EV_Lsat / EV_L_29) + ((EV_L_29 - EV_Lsat) / (10.0 * EV_L_29 * (EV_L_29 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_30), AEVC_30 * ((EV_Lsat / EV_L_30) + ((EV_L_30 - EV_Lsat) / (10.0 * EV_L_30 * (EV_L_30 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_31), AEVC_31 * ((EV_Lsat / EV_L_31) + ((EV_L_31 - EV_Lsat) / (10.0 * EV_L_31 * (EV_L_31 + 1.0)))) * EV_N)
+        .add_flow_sample((EV_L_32), AEVC_32 * ((EV_Lsat / EV_L_32) + ((EV_L_32 - EV_Lsat) / (10.0 * EV_L_32 * (EV_L_32 + 1.0)))) * EV_N)
+    
+    cylinder_head head(
+        chamber_volume: CHCC_V * units.cc,
+        intake_runner_cross_section_area: CHIPT_A * units.cm2,
+        intake_runner_volume: CHIP_V * units.cc,
+        exhaust_runner_cross_section_area: CHEPT_A * units.cm2,
+        exhaust_runner_volume: CHEP_V * units.cc,
+        
+        intake_port_flow: intake_flow,
+        exhaust_port_flow: exhaust_flow,
+        intake_camshaft: intake_camshaft,
+        exhaust_camshaft: exhaust_camshaft,
+        flip_display: flip_display
+    )
+}

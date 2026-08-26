@@ -1,0 +1,53 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine part made by Archangel Motors //
+
+
+
+// Individual throttle body intakes. Compatible with all AMMC-CS Reciprocating engines. //
+
+
+// Installation: Override corresponding parts of code in your engine file with the provided code. Create as many "Intake_Manifold_N" nodes as you have cylinders. Assign each "Intake_Manifold_N" to a corresponding cylinder. //
+
+
+
+// Part Start //
+
+label IM_N(EC_N)    // Intake manifold amount. Does not create intake manifolds automatically. //
+label IM_VDm(1.0)   // Intake manifold velocity decay multiplier. Determines the rate of air velocity loss inside the intake manifold. //
+
+label IMR_Romega(3600.0)    // Intake manifold runner optimal RPM. Determines the engine speed at which the intake runners perform the best in theory. //
+label IMRRWT_N(12.0)    // Intake manifold runner resonance wave travel amount. Determines the theoretical amount of times the low-pressure wave travels up and down the intake runner at optimal runner RPM. //
+label IMR_L((((((1.0 / (IMR_Romega / 60.0)) * ((720.0 - ((ID / units.deg) + ID_delta)) / 360.0) * 1300.0) / 2.0) / IMRRWT_N) * 304.8) - CHIP_L)    // Intake manifold runner length. Calculated automatically, but can be overridden. Units: millimeters. //
+label IMR_A(CHIPI_A)    // Intake manifold runner cross-sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label IMR_Qmax(IMR_A * 0.155 * 146.0)    // Intake manifold runner theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Mathematical dependency. Do not tamper. //
+label IMR_Q(CHIPT_Qmax * 0.95)    // Intake manifold runner actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+
+label IMP_A((IMR_A * 2.25 * EC_N) / IM_N)    // Intake manifold plenum cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label IMP_Qmax(IMP_A * 0.155 * 146.0)    // Intake manifold plenum theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Mathematical dependency. Do not tamper. //
+label IMP_Q((CHIPI_Qmax * EC_N) / IM_N)    // Intake manifold plenum actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+label IMP_Vm(1.0)    // Intake manifold plenum volume multiplier. Determines the intake plenum volume in relation to the total displacement of cylinders it is feeding. //
+label IMP_V((E_Dcc * IMP_Vm) / IM_N)    // Intake manifold plenum volume. Calculated automatically, but can be overridden. Units: cubic centimeters. //
+
+label IM_AFR(14.7)    // Intake air/fuel ratio at wide-open throttle //
+label IM_AFR_Cf(0.0)    // Intake air/fuel ratio overfuel correction factor. Can be used to lean out the mixture if the idle fueling causes it to be richer than desired at wide-open throttle. //
+label IM_IT(0.999)    // Intake throttle body idle position. 1.0 is fully closed, 0.0 is fully open. //
+label IM_IF(0.0)    // Intake idle fueling. Can be used to make the air/fuel mixture richer off-throttle. 0.0 is no extra fueling. Adjustment increments of 0.1 or even 0.01 are recommended. //
+label IM_TG(1.75)    // Intake throttle body gamma(non-linearity). 1.0 is fully linear. Higher values require more input to open the throttle body by the same amount. //
+
+
+
+    intake Intake_Manifold_1(
+        plenum_cross_section_area: IMP_A * units.cm2,
+        plenum_volume: IMP_V * units.cc,
+        intake_flow_rate: k_28inH2O(IMP_Q),
+        runner_length: IMR_L * units.mm,
+        runner_flow_rate: k_28inH2O(IMR_Q),
+        idle_throttle_plate_position: IM_IT,
+        idle_flow_rate: k_carb(IM_IF),
+        molecular_afr: (13.8 + IM_AFR_Cf) * (IM_AFR / 14.7),
+        velocity_decay: IM_VDm
+    )
+
+// Part End //

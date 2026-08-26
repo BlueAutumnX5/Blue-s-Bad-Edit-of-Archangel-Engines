@@ -1,0 +1,28 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Tweak invented by Kei //
+// Discord: kei_1521 //
+
+// Engine part made by Archangel Motors //
+
+
+
+// Kei's cylinder head exhaust port area tweak. Improves sound clarity, may change the performance. Compatible with all AMMC-CS Reciprocating engines. //
+
+
+// Installation: Override corresponding parts of code in your engine file with the provided code. Make sure to use the right intake amount. //
+
+cylinder_head head(
+        chamber_volume: CHCC_V * units.cc,
+        intake_runner_cross_section_area: CHIPT_A * units.cm2,
+        intake_runner_volume: CHIP_V * units.cc,
+        exhaust_runner_cross_section_area: CHEPT_A * 0.70710678 * units.cm2,
+        exhaust_runner_volume: CHEP_V * units.cc,
+        
+        intake_port_flow: intake_flow,
+        exhaust_port_flow: exhaust_flow,
+        intake_camshaft: intake_camshaft,
+        exhaust_camshaft: exhaust_camshaft,
+        flip_display: flip_display
+    )

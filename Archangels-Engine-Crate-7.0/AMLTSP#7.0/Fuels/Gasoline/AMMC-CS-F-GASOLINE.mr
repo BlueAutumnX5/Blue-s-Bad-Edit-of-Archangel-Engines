@@ -1,0 +1,52 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine fuel made by Archangel Motors //
+
+
+
+// Gasoline. Compatible with all AMMC-CS reciprocating engines. //
+
+
+// Installation: Override corresponding parts of code in your engine file with the provided code. //
+// Note: Do not forget to readjust the mass AFR in your intake parameters. The provided fuel was tested at 12.5:1 for max power output and 14.7:1 for general use //
+
+
+
+// Fuel Parameters Start //
+
+label FUEL_NAME("Gasoline")    // Fuel name. //
+label FUEL_m(114.228)    // Fuel molar mass. Units: grams per mole. Only override if you are a professional. //
+label FUEL_rho(740.0 * (units.g / units.L))    // Fuel density. Only override if you are a professional. //
+label FUEL_U(46.7 * (units.kJ / units.g))    // Fuel energy density. Only override if you are a professional. //
+label FUEL_mAFR(13.8)    // Fuel molecular air-fuel ratio. While the true stoichiometric molecular air-fuel ratio is 12.5:1, due to how Engine Simulator works, 13.8:1 is used instead to achieve mass air-fuel ratio of 14.7:1 being the stoichiometric mixture. Only override if you are a professional. //
+
+// Fuel Parameters End //
+
+
+
+// Charge Turbulence and Dilution Parameters Start //
+
+label CHARGE_TDsw(1.0)    // Charge turbulence and dilution adjustment toggle switch. Enables/disables single value turbulence and dilution adjustment. 0.0 - Off, 1.0 - On. //
+label CHARGE_TDf(67.0)    // Charge turbulence and dilution adjustment control value. Range: [0.0, 100.0]. Higher values shift the power peak higher up in the RPM range. //
+
+// Intake charge turbulence and dilution adjustment control value to power per displacement ratio reference chart. //
+// Resulting output is not exact and is a subject to deviation based on overall engine build. //
+
+// 100.0 : >150.0kW/L Power to displacement ratio. //
+// 89.0-99.0 : 90.0-150.0kW/L Power to displacement ratio. //
+// 67.0-89.0 : 55.0-90.0kW/L Power to displacement ratio. //
+// 0.0-67.0 : <55.0kW/L Power to displacement ratio. //
+
+label CHARGE_Tmax(1100.0 - (989.0 * CHARGE_TDsw) - (CHARGE_TDf * CHARGE_TDsw))    // Intake charge maximum turbulence. Calculated automatically, only override if you are a professional. // 
+label CHARGE_cVmax(1100.0 - (989.0 * CHARGE_TDsw) - (CHARGE_TDf * CHARGE_TDsw))    // Intake charge maximum dilution. Calculated automatically, only override if you are a professional. //
+label FUEL_etamax(0.95)    // Fuel maximum combustion efficiency. Only override if you are a professional. //
+label FUEL_etadeltamax(0.1)    // Fuel burning efficiency randomness. Only override if you are a professional. //
+label FUEL_etaminmu(0.6 - ((0.0025 * CHARGE_TDf) * CHARGE_TDsw))    // Fuel low burning efficiency attenuation. Only override if you are a professional. //
+
+
+label TFS_Rbase(4.0)    // Flame speed base multiplier. Only override if you are a professional.//
+label TFS_Rm(E_B / E_S)    // Flame speed additional multiplier. Only override if you are a professional.//
+label TFS_Ryshift(0.0)    // Flame speed shift. Only override if you are a professional.//
+
+// Charge Turbulence And Dilution Parameters End //
