@@ -1,0 +1,592 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine template made by Archangel Motors //
+
+
+
+// Imports Start //
+
+import "engine_sim.mr"
+
+units units()
+constants constants()
+
+impulse_response_library ir_lib()
+
+// Imports End //
+
+
+
+// Simulation Parameters Start //
+
+label SIM_f(44100)    // Simulation frequency. Units: Hertz. //
+label SIM_SLESd(128)    // System of linear equations solver maximum steps. //
+label SIM_FSd(8)    // Fluid simulation steps. //
+label SIM_MCf(0.0)    // Misfire correction factor. Shifts the point where "ignition advance = firing interval" misfire bug occurs. Units: degrees. //
+label SIM_WER_d(1024)    // Rotor resolution. //
+label SIM_WERH_d(1024)    // Rotor housing resolution. //
+label AUDIO_CONV(1.0)    // Audio convolution. //
+label AUDIO_HFG(0.01)    // Audio high frequency gain. //
+label AUDIO_HFN(1.0)    // Audio high frequency noise. //
+label AUDIO_LFN(1.0)    // Audio low frequency noise. //
+
+// Simulation Parameters End //
+
+
+
+// Main Parameters Start //
+
+label R_N(1.0)    // Rotor amount. Does not create rotors automatically. //
+
+label E_omegamax(8000.0)    // Maximum engine speed. Units: Revolutions per minute. //
+label LICO_t(0.1)    // Engine speed limiter ignition cut-off duration. Units: seconds. //
+label TACHO_REDLINE(E_omegamax)    // Redline. Determines at what speed the redline is drawn on the tachometer. Units: revolutions per minute. //
+
+label SM_omega(250.0)    // Starter speed. Units: Revolutions per minute. //
+label SM_Ftq(191.0)    // Starter torque. Units: newton meters. //
+
+// Main Parameters End //
+
+
+
+// Displacements //
+
+label WEC_Vcc((3.0 * 1.73205 * R_r * ES_e * R_b) / 1000.0)    // Chamber displacement. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label WEC_Vci(WEC_Vcc * 0.061024)    // Chamber displacement. Calculated automatically. Units: cubic inches. Do not tamper. //
+label WE_Dcc(WEC_Vcc * R_N)    // Engine displacement. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label WE_Dci(WEC_Vci * R_N)    // Engine displacement. Calculated automatically. Units: cubic inches. Do not tamper. //
+
+// Displacements //
+
+
+
+// Eccentric Shaft Parameters Start //
+
+label ES_e(15.0)    // Eccentricity. Units: millimeters. //
+
+label ES_rho(7.15)    // Eccentric shaft material density. Units: grams per cubic centimeter. //
+label ES_Mm((0.5 * ES_rho) / (ES_rho / 7.15))    // Eccentric shaft mass multiplier. Prevents the eccentric shaft mass from being too low if light materials are used. Calculated automatically, override only if you are a professional. //
+
+label ESRJ_L(R_b * R_N)    // Eccentric shaft rotor journal(s) total length. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label ESRJ_D(R_r / 2.5)    // Eccentric shaft rotor journal diameter. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label ESRJ_V(((constants.pi * (ESRJ_D * ESRJ_D)) * ESRJ_L) / 4000.0)    // Eccentric shaft rotor journal(s) total volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label ESRJ_MOI(((((ESRJ_V * ES_rho) / R_N) / 1000.0) * ((ES_e / 1000.0) * (ES_e / 1000.0))) * R_N)    // Eccentric shaft rotor journal(s) moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+label ESW_T(ESRJ_L)    // Eccentric shaft web(s) total thickness. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label ESW_H(ES_e + ESRJ_D)    // Eccentric shaft web height. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label ESW_V((ESRJ_D * ESW_H * ESW_T) / 1000.0)    // Eccentric shaft web(s) total volume. Calculated automatically, override only if you are a professional. //
+label ESW_MOI(((1.0 / 12.0) * (((ESW_V * ES_rho) / R_N) / 1000.0) * (4.0 * ((ESW_H / 1000.0) * (ESW_H / 1000.0)) + ((ESRJ_D / 1000.0) * (ESRJ_D / 1000.0)))) * R_N)    // Eccentric shaft web(s) moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+label ESMB_N(R_N + 1.0)    // Eccentric shaft bearings amount. Calculated automatically, but can be overridden. //
+label ESMB_L((R_b * 0.625) * ESMB_N)    // Eccentric shaft main bearings total length. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label ESMB_D(ESRJ_D)    // Eccentric shaft main bearing diameter. Calculated automatically, override only if you are a professional. Units: Millimeters. //
+label ESMB_V(((constants.pi * (ESMB_D * ESMB_D)) * ESMB_L) / 4000.0)    // Eccentric shaft main bearings total volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label ESMB_MOI((1.0 / 2.0) * (((ESMB_V * ES_rho) / 1000.0) * ((ESMB_D / 2000.0) * (ESMB_D / 2000.0))))    // Eccentric shaft main bearings moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+label ES_M((ESRJ_V + ESW_V + ESMB_V) * ES_rho * ES_Mm)    // Eccentric shaft mass. Calculated automatically, override only if you are a professional. Units: grams. //
+label ES_MOI(ESW_MOI + ESRJ_MOI + ESMB_MOI)    // Eccentric shaft moment of inertia. Calculated automatically, only override if you are a professional. Units: kilograms times meters squared. //
+label ES_Fmu(((ES_M / 1000.0) * 9.80665) * (0.0015 * ESMB_N))    // Eccentric shaft friction. Calculated automatically, only override if you are a professional. Units: newton meters. //
+
+// Eccentric Shaft Parameters End //
+
+
+
+// Flywheel Parameters Start //
+
+label FW_D(R_r * 2.5)    // Flywheel diameter. Calculated automatically, but can be overridden. Units: millimeters. //
+label FW_T((R_b / 8.0) * R_N)    // Flywheel thickness. Calculated automatically, but can be overridden. Units: millimeters. //
+label FW_V(((constants.pi * (FW_D * FW_D)) * FW_T) / 4000.0)    // Flywheel volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label FW_rho(7.15)    // Flywheel material density. Units: grams per cubic centimeter. //
+label FW_Mm((0.15 * FW_rho) / (FW_rho / 7.15))    // Flywheel mass multiplier. Prevents the flywheel mass from being too low if lighter materials are used. Calculated automatically, override only if you are a professional. //
+label FW_M(FW_V * FW_rho * FW_Mm)    // Flywheel mass. Calculated automatically, but can be overridden. Units: grams. //
+label FW_MOI((1.0 / 2.0) * ((FW_M / 1000.0) * ((FW_D / 2000.0) * (FW_D / 2000.0))))    // Flywheel moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+label FW_Fmu(((FW_M / 1000.0) * 9.80665) * 0.0015)    // Flywheel friction. Calculated automatically, override only if you are a professional. Units: newton meters. //
+
+// Flywheel Parameters End //
+
+
+
+// Rotor Parameters Start //
+
+label R_r(105.0)    // Rotor radius. Units: millimeters. //
+label R_b(80.0)    // Rotor depth. Units: millimeters. //
+label RP_V(38.0)    // Rotor pocket volume. Units: cubic centimeters. //
+
+label RCG_r(ES_e * 3.0)    // Rotor crown gear radius. Units: millimeters //
+
+label R_rho(7.15)    // Rotor material density. Units: grams per cubic centimeter //  
+label R_Mm((0.15 * R_rho) / (R_rho / 7.15))    // Rotor mass multiplier. Prevents the rotor mass from being too low if light materials are used. Calculated automatically, override only if you are a professional. //
+label R_V((((R_r * R_r) / 2.0) * R_b) / 1000.0)    // Rotor volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label R_M(R_V * R_rho * R_Mm)    // Rotor mass. Calculated automatically, but can be overridden. Units: grams. //
+
+label R_MOI((R_M / 1000.0) * ((((R_b / 1000.0) * (R_b / 1000.0)) + ((R_r / 1000.0) * (R_r / 1000.0))) / 12.0))    // Rotor moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+label R_MOIE((R_M / 1000.0) * ((ES_e / 1000.0) * (ES_e / 1000.0)))    // Rotor moment of inertia applied to crankshaft. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+label R_Fmu(((R_M / 1000.0) * 9.80665) * 0.0015)    // Rotor friction. Calculated automatically, override only if you are a professional. Units: newton meters. //
+
+// Rotor Parameters End //
+
+
+
+// Ports Parameters Start //
+
+label WIP_A(((((WEC_Vci * 3.0 * E_omegamax / 3456.00) * 1.17203) / 146.0) / 0.155) / 0.95)    // Peripheral intake port cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label WIP_O(140.0 * units.deg)    // Peripheral intake port start. Units: degrees. //
+label WIP_C(120.0 * units.deg)    // Peripheral intake port end. Units: degrees. //
+label WIP_Q((WIP_A * 0.95) * 0.155 * 146.0)    // Peripheral intake port actual volumetric flow rate. Calculated automatically, but can be overridden. Units: square centimeters. //
+
+label WEP_A(((((WEC_Vci * 3.0 * E_omegamax / 3456.00) * 1.17203) / 146.0) / 0.155) / 0.95)    // Peripheral exhaust port cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label WEP_O(240.0 * units.deg)    // Peripheral exhaust port start. Units: degrees. //
+label WEP_C(220.0 * units.deg)    // Peripheral exhaust port end. Units: degrees. //
+label WEP_Q((WEP_A * 0.95) * 0.155 * 146.0)    // Peripheral exhaust port actual volumetric flow rate. Calculated automatically, but can be overridden. Units: square centimeters. //
+
+// Ports Parameters End //
+
+
+
+// Intake Parameters Start //
+
+label IM_N(1.0)    // Intake manifold amount. Does not create intake manifolds automatically. //
+label IM_VDm(1.0)   // Intake manifold velocity decay multiplier. Determines the rate of air velocity loss inside the intake manifold. //
+
+label IMR_L((WEC_Vcc / WIP_A) * 10.0)    // Intake manifold runner length. Units: millimeters. //
+label IMR_A(((((WEC_Vci * 3.0 * E_omegamax / 3456.00) * 1.17203) / 146.0) / 0.155) * (R_N / IM_N))    // Intake manifold runner cross-sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label IMR_Qmax(IMR_A * 0.155 * 146.0)    // Intake manifold runner theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Mathematical dependency. Do not tamper. //
+label IMR_Q(IMR_Qmax * 0.95)    // Intake manifold runner actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+
+label IMP_A((IMR_A * R_N) / IM_N)    // Intake manifold plenum cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label IMP_Qmax(IMP_A * 0.155 * 146.0)    // Intake manifold plenum theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Mathematical dependency. Do not tamper. //
+label IMP_Q((IMR_Q * R_N) / IM_N)    // Intake manifold plenum actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+label IMP_Vm(1.0)    // Intake manifold plenum volume multiplier. Determines the intake plenum volume in relation to the total displacement of rotors it is feeding. //
+label IMP_V((WE_Dcc * IMP_Vm) / IM_N)    // Intake manifold plenum volume. Calculated automatically, but can be overridden. Units: cubic centimeters. //
+
+label IM_AFR(14.7)    // Intake air/fuel ratio at wide-open throttle //
+label IM_AFR_Cf(0.0)    // Intake air/fuel ratio overfuel correction factor. Can be used to lean out the mixture if the idle fueling causes it to be richer than desired at wide-open throttle. //
+label IM_IT(0.9965)    // Intake throttle body idle position. 1.0 is fully closed, 0.0 is fully open. //
+label IM_IF(0.0)    // Intake idle fueling. Can be used to make the air/fuel mixture richer off-throttle. 0.0 is no extra fueling. Adjustment increments of 0.1 or even 0.01 are recommended. //
+label IM_TG(1.75)    // Intake throttle body gamma(non-linearity). 1.0 is fully linear. Higher values require more input to open the throttle body by the same amount. //
+
+// Intake Parameters End //
+
+
+
+// Fuel Parameters Start //
+
+label FUEL_NAME("Gasoline")    // Fuel name. //
+label FUEL_m(114.228)    // Fuel molar mass. Units: grams per mole. Only override if you are a professional. //
+label FUEL_rho(740.0 * (units.g / units.L))    // Fuel density. Only override if you are a professional. //
+label FUEL_U(46.7 * (units.kJ / units.g))    // Fuel energy density. Only override if you are a professional. //
+label FUEL_mAFR(13.8)    // Fuel molecular air-fuel ratio. While the true stoichiometric molecular air-fuel ratio is 12.5:1, due to how Engine Simulator works, 13.8:1 is used instead to achieve mass air-fuel ratio of 14.7:1 being the stoichiometric mixture. Only override if you are a professional. //
+
+// Fuel Parameters End //
+
+
+
+// Charge Turbulence and Dilution Parameters Start //
+
+label CHARGE_Tmax(11.0)    // Intake charge maximum turbulence. Only override if you are a professional. // 
+label CHARGE_cVmax(11.0)    // Intake charge maximum dilution. Only override if you are a professional. //
+
+label FUEL_etamax(0.95)    // Fuel maximum combustion efficiency. Only override if you are a professional. //
+label FUEL_etadeltamax(0.1)    // Fuel burning efficiency randomness. Only override if you are a professional. //
+label FUEL_etaminmu(0.6)    // Fuel low burning efficiency attenuation. Only override if you are a professional. //
+
+
+label TFS_Rbase(4.0)    // Flame speed base multiplier. Only override if you are a professional.//
+label TFS_Rm(1.0)    // Flame speed additional multiplier. Only override if you are a professional.//
+label TFS_Ryshift(0.0)    // Flame speed shift. Only override if you are a professional.//
+
+// Charge Turbulence And Dilution Parameters End //
+
+
+
+// Exhaust Parameters Start //
+
+label EH_N(1.0)    // Exhaust headers amount. Does not create exhaust headers automatically. //
+label EH_VDm(1.0)    // Exhaust headers velocity decay multiplier. Determines the rate of exhaust gases velocity loss inside the exhaust headers. //
+label EH_BMm(0.0)    // Exhaust headers backflow mixing. Determines the tendency of exhaust gases to flow back into the cylinder. 0.0 is absence of backflow. //
+
+label EHPT_L((WEC_Vcc / EP_A) * 10.0)    // Exhaust headers primary tube length. Units: millimeters. //
+label EHPT_A(WEP_A)    // Exhaust headers primary tube cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label EHPT_Qmax(EHPT_A * 0.155 * 146.0)    // Exhaust headers primary tube theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Calculated automatically. Mathematical dependency. Do not tamper. // 
+label EHPT_Q(EHPT_Qmax * 0.95)    // Exhaust headers primary tube actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+
+label EHC_L(EHPT_L / 2.0)    // Exhaust headers collector length. Calculated automatically, but can be overridden. Units: millimeters. //
+label EHC_A(((((WEC_Vci * 3.0 * E_omegamax / 3456.00) * 1.17203) / 146.0) / 0.155) * (R_N / EH_N))    // Exhaust headers collector cross section area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label EHC_Qmax(EHC_A * 0.155 * 146.0)    // Exhaust headers collector theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Calculated automatically. Mathematical dependency. Do not tamper. // 
+label EHC_Q((EHPT_Q * R_N) / EH_N)    // Exhaust headers collector actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+label EHC_V((EHC_A * EHC_L) / 10.0)    // Exhaust headers collector volume. Calculated automatically. Do not tamper. //
+
+label EP_A(EHC_A)    // Exhaust pipe cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters //
+label EP_L(4000.0)    // Exhaust pipe length. Units: millimeters //
+label EP_V((EP_A * EP_L) / 10.0)    // Exhaust pipe volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+
+// Exhaust Parameters End //
+
+
+
+// Vehicle Parameters Start //
+
+label V_M(1750.0)    // Vehicle mass. Units: kilograms. //
+
+label V_B(1800.0)    // Vehicle width. Units: millimeters. //
+label V_H(1300.0)    // Vehicle height. Units: millimeters. //
+
+label V_Cd(0.40)    // Vehicle drag coefficient. //
+
+label V_Frr(V_M * 9.80665 * 0.015)    // Vehicle rolling resistance. Calculated automatically, override only if you are a professional. Units: Newtons. //
+
+label V_Ls(40.0) // Vehicle stopping distance. Units: meters. //
+label V_Fb(((V_M * (27.77778 * 27.77778)) / 2.0) / V_Ls)    // Vehicle braking force. Calculated automatically, override only if you are a professional. Units: Newtons. //
+
+label T_B(265.0)    // Tire width. Units: millimeters. //
+label TA_R(55.0)    // Tire aspect ratio. Percentage. //
+label WR_D(15.0)    // Wheel rim diameter. Units: inches. //
+label W_D((((T_B * TA_R) / 2540.0) * 2.0) + WR_D)    // Wheel total diameter. Calculated automatically, override only if you are a professional. Units: inches. //
+
+// Vehicle Parameters End //
+
+
+
+// Drivetrain Parameters Start //
+
+label E_Nmax((((WE_Dcc / 1000.0) * 111.854) * 9550.0) / (E_omegamax * 0.6))    // Peak engine torque. Used in drivetrain stiffness calculations. Calculated automatically, but can be overridden after measuring it on the dynamometer. Units: newton meters. //
+
+label CL_Nmax(E_Nmax * 1.33)    // Clutch maximum torque. Calculated automatically, but can be overridden. Units: newton meters. //
+label CL_phimax(2.5)    // Clutch maximum torsion angle. Units: degrees. //
+label CL_phik(CL_Nmax / CL_phimax)    // Clutch torsional stiffness. Calculated automatically, override only if you are a professional. Units. newton meters per degree. //
+label CL_zeta(2.0)    // Clutch torsional damping coefficient. //
+
+
+label DR_phimax(2.5)    // Drivetrain maximum torsion angle. Units: degrees. //
+label DR_phik((CL_Nmax * 1.33) / DR_phimax)    // Drivetrain torsional stiffness. Calculated automatically, override only if you are a professional. Units: newton meters per degree. //
+label DR_zeta(2.0)    // Drivetrain torsional damping coefficient. //
+
+
+label FD_R(7.54)    // Final drive ratio //
+
+label GB_R1(3.200)    // First gear ratio. Does not create gears automatically //
+label GB_R2(2.000)    // Second gear ratio. Does not create gears automatically //
+label GB_R3(1.333)    // Third gear ratio. Does not create gears automatically //
+label GB_R4(1.000)    // Fourth gear ratio. Does not create gears automatically //
+label GB_R5(0.761)    // Fifth gear ratio. Does not create gears automatically //
+
+// Drivetrain Parameters End //
+
+
+
+// Dynamometer Parameters Start //
+
+label DYN_RPMmin(1500.0)    // Dynamometer minimum speed. Units: revolutions per minute. //
+label DYN_RPMmax(E_omegamax)    // Dynamometer maximum speed. Calculated automatically, but can be overridden. Units: revolutions per minute. //
+label DYN_dRPM(100.0)    // Dynamometer hold speed steps. Units: revolutions per minute. //
+
+
+
+// Wires start //
+
+private node wires {
+    output wire1: ignition_wire();
+}
+
+// Wires end //
+
+// Distributor start //
+
+public node Engine_Distributor {
+    input wires;
+    input timing_curve;
+    input rev_limit: E_omegamax * units.rpm;
+    input limiter_duration: LICO_t * units.sec;
+    alias output __out:
+        ignition_module(timing_curve: timing_curve, rev_limit: rev_limit, limiter_duration: limiter_duration)
+            .connect_wire(wires.wire1,(-1.0 * (SIM_MCf * units.deg)) +  0 * units.deg)
+            .connect_wire(wires.wire1,(-1.0 * (SIM_MCf * units.deg)) +  360 * units.deg)
+            .connect_wire(wires.wire1,(-1.0 * (SIM_MCf * units.deg)) +  720 * units.deg);
+}
+
+// Distributor End //
+
+// Turbulence to Flame Speed Ratio Node Start //
+
+private node Turbulence_To_Flame_Speed_Ratio {
+    alias output __out:
+        function(2.5)
+            .add_sample((0.0), (TFS_Rbase * TFS_Rm) * (0.0 + TFS_Ryshift))
+            .add_sample((2.5), (TFS_Rbase * TFS_Rm) * (2.5 + TFS_Ryshift))
+            .add_sample((5.0), (TFS_Rbase * TFS_Rm) * (5.0 + TFS_Ryshift))
+            .add_sample((7.5), (TFS_Rbase * TFS_Rm) * (7.5 + TFS_Ryshift))
+            .add_sample((10.0), (TFS_Rbase * TFS_Rm) * (10.0 + TFS_Ryshift))
+            .add_sample((12.5), (TFS_Rbase * TFS_Rm) * (12.5 + TFS_Ryshift))
+            .add_sample((15.0), (TFS_Rbase * TFS_Rm) * (15.0 + TFS_Ryshift))
+            .add_sample((17.5), (TFS_Rbase * TFS_Rm) * (17.5 + TFS_Ryshift))
+            .add_sample((20.0), (TFS_Rbase * TFS_Rm) * (20.0 + TFS_Ryshift))
+            .add_sample((22.5), (TFS_Rbase * TFS_Rm) * (22.5 + TFS_Ryshift))
+            .add_sample((25.0), (TFS_Rbase * TFS_Rm) * (25.0 + TFS_Ryshift))
+            .add_sample((27.5), (TFS_Rbase * TFS_Rm) * (27.5 + TFS_Ryshift))
+            .add_sample((30.0), (TFS_Rbase * TFS_Rm) * (30.0 + TFS_Ryshift))
+            .add_sample((32.5), (TFS_Rbase * TFS_Rm) * (32.5 + TFS_Ryshift))
+            .add_sample((35.0), (TFS_Rbase * TFS_Rm) * (35.0 + TFS_Ryshift))
+            .add_sample((37.5), (TFS_Rbase * TFS_Rm) * (37.5 + TFS_Ryshift))
+            .add_sample((40.0), (TFS_Rbase * TFS_Rm) * (40.0 + TFS_Ryshift))
+            .add_sample((42.5), (TFS_Rbase * TFS_Rm) * (42.5 + TFS_Ryshift))
+            .add_sample((45.0), (TFS_Rbase * TFS_Rm) * (45.0 + TFS_Ryshift))
+            .add_sample((47.5), (TFS_Rbase * TFS_Rm) * (47.5 + TFS_Ryshift))
+            .add_sample((50.0), (TFS_Rbase * TFS_Rm) * (50.0 + TFS_Ryshift))
+            .add_sample((52.5), (TFS_Rbase * TFS_Rm) * (52.5 + TFS_Ryshift))
+            .add_sample((55.0), (TFS_Rbase * TFS_Rm) * (55.0 + TFS_Ryshift))
+            .add_sample((57.5), (TFS_Rbase * TFS_Rm) * (57.5 + TFS_Ryshift))
+            .add_sample((60.0), (TFS_Rbase * TFS_Rm) * (60.0 + TFS_Ryshift))
+            .add_sample((62.5), (TFS_Rbase * TFS_Rm) * (62.5 + TFS_Ryshift))
+            .add_sample((65.0), (TFS_Rbase * TFS_Rm) * (65.0 + TFS_Ryshift))
+            .add_sample((67.5), (TFS_Rbase * TFS_Rm) * (67.5 + TFS_Ryshift))
+            .add_sample((70.0), (TFS_Rbase * TFS_Rm) * (70.0 + TFS_Ryshift))
+            .add_sample((72.5), (TFS_Rbase * TFS_Rm) * (72.5 + TFS_Ryshift))
+            .add_sample((75.0), (TFS_Rbase * TFS_Rm) * (75.0 + TFS_Ryshift))
+            .add_sample((77.5), (TFS_Rbase * TFS_Rm) * (77.5 + TFS_Ryshift))
+            .add_sample((80.0), (TFS_Rbase * TFS_Rm) * (80.0 + TFS_Ryshift))
+            .add_sample((82.5), (TFS_Rbase * TFS_Rm) * (82.5 + TFS_Ryshift))
+            .add_sample((85.0), (TFS_Rbase * TFS_Rm) * (85.0 + TFS_Ryshift))
+            .add_sample((87.5), (TFS_Rbase * TFS_Rm) * (87.5 + TFS_Ryshift))
+            .add_sample((90.0), (TFS_Rbase * TFS_Rm) * (90.0 + TFS_Ryshift))
+            .add_sample((92.5), (TFS_Rbase * TFS_Rm) * (92.5 + TFS_Ryshift))
+            .add_sample((95.0), (TFS_Rbase * TFS_Rm) * (95.0 + TFS_Ryshift))
+            .add_sample((97.5), (TFS_Rbase * TFS_Rm) * (97.5 + TFS_Ryshift))
+            .add_sample((100.0), (TFS_Rbase * TFS_Rm) * (100.0 + TFS_Ryshift))
+            .add_sample((102.5), (TFS_Rbase * TFS_Rm) * (102.5 + TFS_Ryshift))
+            .add_sample((105.0), (TFS_Rbase * TFS_Rm) * (105.0 + TFS_Ryshift))
+            .add_sample((107.5), (TFS_Rbase * TFS_Rm) * (107.5 + TFS_Ryshift))
+            .add_sample((110.0), (TFS_Rbase * TFS_Rm) * (110.0 + TFS_Ryshift))
+            .add_sample((112.5), (TFS_Rbase * TFS_Rm) * (112.5 + TFS_Ryshift))
+            .add_sample((115.0), (TFS_Rbase * TFS_Rm) * (115.0 + TFS_Ryshift))
+            .add_sample((117.5), (TFS_Rbase * TFS_Rm) * (117.5 + TFS_Ryshift))
+            .add_sample((120.0), (TFS_Rbase * TFS_Rm) * (120.0 + TFS_Ryshift));
+}
+
+// Turbulence to Flame Speed Ratio Node End //
+
+// Engine assembly start //
+
+public node Engine {
+    alias output __out: engine;
+
+// Miscellaneous parameters start //
+
+    wankel_engine engine(
+        name: "AMMC-CS-E-Wa1",
+        starter_torque: SM_Ftq * units.Nm,
+        starter_speed: SM_omega * units.rpm,
+        redline: TACHO_REDLINE * units.rpm,
+        fuel: fuel(
+            name: FUEL_NAME,
+            molecular_mass: FUEL_m * units.g,
+            density: FUEL_rho,
+            energy_density: FUEL_U,
+            molecular_afr: FUEL_mAFR,
+            max_burning_efficiency: FUEL_etamax,
+            burning_efficiency_randomness: FUEL_etadeltamax,
+            low_efficiency_attenuation: FUEL_etaminmu,
+            max_turbulence_effect: CHARGE_Tmax,
+            max_dilution_effect: CHARGE_cVmax,
+            turbulence_to_flame_speed_ratio: Turbulence_To_Flame_Speed_Ratio()
+        ),
+        throttle_gamma: IM_TG,
+        convolution: AUDIO_CONV,
+        hf_gain: AUDIO_HFG,
+        jitter: AUDIO_HFN,
+        noise: AUDIO_LFN,
+        simulation_frequency: SIM_f,
+        max_sle_solver_steps: SIM_SLESd,
+        fluid_simulation_steps: SIM_FSd,
+        rotor_calculation_quality: SIM_WER_d,
+        rotor_housing_resolution: SIM_WERH_d,
+        dyno_min_speed: DYN_RPMmin * units.rpm,
+        dyno_max_speed: DYN_RPMmax * units.rpm,
+        dyno_hold_step: DYN_dRPM * units.rpm
+    )
+
+// Miscellaneous parameters end //
+
+// Wires start //
+
+    wires wires()
+
+// Wires end //
+
+// Crankshaft Start //
+
+    crankshaft Eccentric_Shaft_1(
+        throw: ES_e * units.mm,
+        mass: ES_M * units.g,
+        flywheel_mass: FW_M * units.g,
+        friction_torque: (ES_Fmu + FW_Fmu + (R_Fmu * R_N)) * units.Nm,
+        moment_of_inertia: (ES_MOI + (R_MOIE * R_N) + FW_MOI),
+        position_x: 0.0,
+        position_y: 0.0,
+        tdc: (-1.0 * (SIM_MCf * units.deg)) + 0.0 * units.deg
+    )
+
+    rod_journal Rotor_Journal_1(angle: 0 * units.deg)
+
+    Eccentric_Shaft_1
+        .add_rod_journal(Rotor_Journal_1)
+
+// Crankshaft End //
+
+// Rotors Start //
+
+    wankel_rotor Rotor_1(
+        mass: R_M * units.g,
+        moment_of_inertia: R_MOI,
+        radius: R_r * units.mm,
+        crown_gear_radius: RCG_r * units.mm,
+        angle: 60 * units.deg,
+        depth: R_b * units.mm,
+        depression_volume: RP_V * units.cc
+    )
+
+// Rotors End //
+
+// Intake Manifolds Start //
+    
+    intake Intake_Manifold_1(
+        plenum_cross_section_area: IMP_A * units.cm2,
+        plenum_volume: IMP_V * units.cc,
+        intake_flow_rate: k_28inH2O(IMP_Q),
+        runner_length: IMR_L * units.mm,
+        runner_flow_rate: k_28inH2O(IMR_Q),
+        idle_throttle_plate_position: IM_IT,
+        idle_flow_rate: k_carb(IM_IF),
+        molecular_afr: (13.8 + IM_AFR_Cf) * (IM_AFR / 14.7),
+        velocity_decay: IM_VDm
+    )
+
+// Intake Manifolds End //
+
+// Exhaust Headers Start //
+
+    exhaust_system_parameters Exhaust_System_Parameters(
+        length: (EHC_L + EP_L) * units.mm,
+        collector_cross_section_area: EP_A * units.cm2,
+        volume: (EHC_V + EP_V) * units.cc,
+        outlet_flow_rate: k_28inH2O(EHC_Q),
+        primary_tube_length: EHPT_L * units.mm,
+        primary_flow_rate: k_28inH2O(EHPT_Q),
+        velocity_decay: EH_VDm,
+        backflow_atmospheric_mixing: EH_BMm
+    )
+
+    exhaust_system Exhaust_Headers_1(Exhaust_System_Parameters, impulse_response: ir_lib.default_0, audio_volume: 1.0)
+
+// Exhaust Headers End //
+
+
+// Rotor Housings Start //
+
+    engine.add_rotor(
+        Intake_Manifold_1,
+        Exhaust_Headers_1,
+        Rotor_1,
+        Rotor_Journal_1,
+        wires.wire1,
+        sound_attenuation: 1.0,
+        primary_length: (0.0) * units.mm,
+        intake_port: default_wankel_peripheral_port(WIP_C, WIP_O, k_28inH2O(WIP_Q)),
+        exhaust_port: default_wankel_peripheral_port(WEP_C, WEP_O, k_28inH2O(WEP_Q)),
+        intake_runner_cross_section_area: WIP_A * units.cm2,
+        exhaust_cross_section_area: WEP_A * units.cm2,
+        spark_plug_angle: 0
+    )
+
+    engine.add_crankshaft(Eccentric_Shaft_1)
+
+// Rotor Housings End //
+
+// Ignition Start //
+
+    function timing_curve(500 * units.rpm)
+    timing_curve
+        .add_sample(0 * units.rpm, 8.0 * units.deg)
+        .add_sample(500 * units.rpm, 10.0 * units.deg)
+        .add_sample(1000 * units.rpm, 12.0 * units.deg)   
+        .add_sample(1500 * units.rpm, 14.0 * units.deg)
+        .add_sample(2000 * units.rpm, 16.0 * units.deg)
+        .add_sample(2500 * units.rpm, 18.0 * units.deg)
+	    .add_sample(3000 * units.rpm, 20.0 * units.deg)
+	    .add_sample(3500 * units.rpm, 22.0 * units.deg)   
+	    .add_sample(4000 * units.rpm, 24.0 * units.deg)
+	    .add_sample(4500 * units.rpm, 24.0 * units.deg)   
+	    .add_sample(5000 * units.rpm, 24.0 * units.deg)
+	    .add_sample(5500 * units.rpm, 24.0 * units.deg)
+        .add_sample(6000 * units.rpm, 24.0 * units.deg)   
+        .add_sample(6500 * units.rpm, 24.0 * units.deg)
+        .add_sample(7000 * units.rpm, 24.0 * units.deg)
+        .add_sample(7500 * units.rpm, 24.0 * units.deg)
+        .add_sample(8000 * units.rpm, 24.0 * units.deg)
+        .add_sample(8500 * units.rpm, 24.0 * units.deg)
+        .add_sample(9000 * units.rpm, 24.0 * units.deg)
+        .add_sample(9500 * units.rpm, 24.0 * units.deg)
+        .add_sample(10000 * units.rpm, 24.0 * units.deg)
+
+    engine.add_ignition_module(
+        Engine_Distributor(
+            wires: wires,
+            timing_curve: timing_curve
+        )
+    )
+}
+
+// Ignition End //
+
+// Engine assembly end //
+
+// Vehicle Start //
+
+public node Vehicle {
+    alias output __out:
+        vehicle(
+            mass: V_M * units.kg,
+            drag_coefficient: V_Cd,
+            cross_sectional_area: (V_B * units.mm) * (V_H * units.mm),
+            diff_ratio: FD_R,
+            tire_radius: (W_D / 2) * units.inch,
+            rolling_resistance: V_Frr * units.Nm,
+            max_brake_force: V_Fb * units.Nm,
+            simulate_flex: true,
+            stiffness: DR_phik * units.Nm / units.deg,
+            limit_flex: true,
+            max_flex: DR_phimax * units.deg,
+            damping: DR_zeta
+        );
+}
+
+// Vehicle End //
+
+// Transmission start //
+
+public node Transmission {
+    alias output __out:
+        transmission(
+            max_clutch_torque: CL_Nmax * units.Nm,
+            simulate_flex: true,
+            clutch_stiffness: CL_phik * units.Nm / units.deg,
+            limit_clutch_flex: true,
+            max_clutch_flex: CL_phimax * units.deg,
+            clutch_damping: CL_zeta
+        )
+        .add_gear(GB_R1)
+        .add_gear(GB_R2)
+        .add_gear(GB_R3)
+        .add_gear(GB_R4)
+        .add_gear(GB_R5);
+}
+
+// Transmission End //
+
+public node main {
+    set_engine(Engine())
+    set_vehicle(Vehicle())
+    set_transmission(Transmission())
+}
+
+main()

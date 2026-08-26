@@ -1,0 +1,1177 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine template made by Archangel Motors //
+
+
+
+// Imports Start //
+
+import "engine_sim.mr"
+
+units units()
+constants constants()
+
+impulse_response_library ir_lib()
+
+// Imports End //
+
+
+
+// Simulation Parameters Start //
+
+label SIM_f(4410)    // Simulation frequency. Units: Hertz. //
+label SIM_SLESd(128)    // System of linear equations solver maximum steps. //
+label SIM_FSd(8)    // Fluid simulation steps. //
+label SIM_MCf(0.0)    // Misfire correction factor. Shifts the point where "ignition advance = firing interval" misfire bug occurs. Units: degrees. //
+label AUDIO_CONV(1.0)    // Audio convolution. //
+label AUDIO_HFG(0.01)    // Audio high frequency gain. //
+label AUDIO_HFN(1.0)    // Audio high frequency noise. //
+label AUDIO_LFN(1.0)    // Audio low frequency noise. //
+
+// Simulation Parameters End //
+
+
+
+// Main Parameters Start //
+
+label EC_N(10.0)    // Cylinder amount. Does not create cylinders automatically. //
+label ECB_N(2.0)    // Cylinder bank amount. Does not create cylinder banks automatically. //
+
+label E_B(108.4)    // Cylinder bore diameter. Units: millimeters. //
+label E_S(108.4)    // Piston stroke. Units: millimeters. //
+
+label E_omegamax(4800.0)    // Maximum engine speed. Units: Revolutions per minute. //
+label LICO_t(0.1)    // Engine speed limiter ignition cut-off duration. Units: seconds. //
+label TACHO_REDLINE(E_omegamax)    // Redline. Determines at what speed the redline is drawn on the tachometer. Units: revolutions per minute. //
+
+label SM_omega(250.0)    // Starter speed. Units: Revolutions per minute. //
+label SM_Ftq(191.0)    // Starter torque. Units: newton meters. //
+
+// Main Parameters End //
+
+
+
+// Displacements //
+
+label EC_Vcc((((((E_B / 2.0) * (E_B / 2.0)) * constants.pi) * E_S) / 1000.0))    // Single cylinder displacement. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label EC_Vci(EC_Vcc * 0.061024)    // Single cylinder displacement. Calculated automatically. Units: cubic inches. Do not tamper. //
+label E_Dcc(EC_Vcc * EC_N)    // Engine displacement. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label E_Dci(EC_Vci * EC_N)    // Engine displacement. Calculated automatically. Units: cubic inches. Do not tamper. //
+
+// Displacements //
+
+
+
+// Piston Parameters Start //
+
+label PCH_d((E_S / E_B) * 4.0)    // Piston compression height divisor. Determines the "Piston stroke/piston compression height" ratio. Calculated automatically, but can be overridden. //
+label PCH_H(E_S / PCH_d)    // Piston compression height. Calculated automatically, but can be overridden. Units: millimeters. //
+
+label PT_H(PCH_H / 2.0)    // Piston top thickness. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label PT_V((((E_B * E_B) * constants.pi) * PT_H) / 4000.0)    // Piston top volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+
+label PS_H((PCH_H * 2.5) - PT_H)    // Piston skirt height. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label PSI_D(E_B - (2.0 * (E_B / 15.0)))    // Piston skirt internal diameter. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label PSID_V((((PSI_D * PSI_D) * constants.pi) * PS_H) / 4000.0)    // Piston skirt internal diameter volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label PSOD_V((((E_B * E_B) * constants.pi) * PS_H) / 4000.0)    // Piston skirt outer diameter volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label PS_V(PSOD_V - PSID_V)    // Piston skirt volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+
+label P_rho(7.15)    // Piston material density. Units: grams per cubic centimeter //  
+label P_Mm((0.15 * P_rho) / (P_rho / 7.15))    // Piston mass multiplier. Prevents the piston mass from being too low if light materials are used. Calculated automatically, override only if you are a professional. //
+label P_V(PT_V + PS_V)    // Piston volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //                                             
+label P_M(P_V * P_rho * P_Mm)    // Piston mass. Calculated automatically, but can be overridden. Units: grams. //
+
+label PR_C(100.0)    // Piston rings condition. Percentage. Determines the amount of piston rings blowby. Do not use values less than 0.01 //
+label PRW_L(E_B / 22.0)    // Piston rings radial wall thickness. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label PRG_L(E_B * 0.0035)    // Piston rings gap. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label PRG_alpha((PRG_L * 360.0) / (2.0 * constants.pi * (E_B / 2.0)))    // Piston rings gap central angle. Calculated automatically. Units: degrees. Do not tamper. //
+label PRGOS_A((((E_B / 2.0) * (E_B / 2.0)) * (PRG_alpha / 2.0)) / 100.0)    // Piston rings gap outer sector area. Calculated automatically. Units: square centimeters. Do not tamper. //
+label PRGIS_A(((((E_B - (PRW_L * 2.0)) / 2.0) * ((E_B - (PRW_L * 2.0)) / 2.0)) * (PRG_alpha / 2.0)) / 100.0)    // Piston rings gap inner sector area. Calculated automatically. Units: square centimeters. Do not tamper. //
+label PRG_A(PRGOS_A - PRGIS_A)    // Piston rings gap area. Calculated automatically. Units: square centimeters. Do not tamper. //
+label PR_Bm(1.0 / PR_C)    // Piston rings blowby multiplier. Prevents the blowby from being too high by default. Calculated automatically, overridde only if you are a professional. //
+label PR_B((PRG_A * 0.155 * 146.0) * PR_Bm)    // Piston rings blowby. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+
+// Piston Parameters End //
+
+
+
+// Connecting Rod Parameters Start //
+
+label CR_R(1.75)    // Connecting rod ratio. Determines the "connecting rod length/stroke" ratio. //
+label CR_L(E_S * CR_R)    // Connecting rod length. Calculated automatically, but can be overridden. Units: millimeters. //
+label CR_T(E_B / 3.5)    // Connecting rod thickness. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CR_W(E_B / 3.0)    // Connecting rod width. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CR_V((CR_L * CR_T * CR_W) / 1000.0)    // Connecting rod volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+
+label CR_rho(7.15)    // Connecting rod material density. Units: grams per cubic centimeter //
+label CR_Mm((0.15 * CR_rho) / (CR_rho / 7.15))    // Connecting rod mass multiplier. Prevents the connecting rod mass from being too low if light materials are used. Calculated automatically, override only if you are a professional. //
+label CR_M(CR_V * CR_rho * CR_Mm)    // Connecting rod mass. Calculated automatically, but can be overridden. Units: grams. //
+
+label CR_MOI(((1.0 / 12.0) * (CR_M / 1000.0)) * (((CR_L / 1000.0) * (CR_L / 1000.0)) + ((CR_W / 1000.0) * (CR_W / 1000.0))))    // Connecting rod moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+label CR_MOIC((((1.0 / 12.0) * (CR_M / 1000.0)) * ((4.0 * (((CR_L + CT_L) / 1000.0) * ((CR_L + CT_L) / 1000.0))) + ((CR_W / 1000.0) * (CR_W / 1000.0)))) * EC_N)    // Connecting rod moment of inertia applied to crankshaft. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+// Connecting Rod Parameters End //
+
+
+
+// Crankshaft Parameters Start //
+
+label CT_L(E_S / 2.0)    // Crankshaft throw. Calculated automatically. Units: millimeters. Do not tamper. //
+
+label C_rho(7.15)    // Crankshaft material density. Units: grams per cubic centimeter. //
+label C_Mm((0.5 * C_rho) / (C_rho / 7.15))    // Crankshaft mass multiplier. Prevents the crankshaft mass from being too low if light materials are used. Calculated automatically, override only if you are a professional. //
+
+label CRJ_L((CR_T * EC_N) / ECB_N)    // Crankshaft rod journal(s) total length. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CRJ_D(CR_W)    // Crankshaft rod journal diameter. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CRJ_V(((constants.pi * (CRJ_D * CRJ_D)) * CRJ_L) / 4000.0)    // Crankshaft rod journal(s) total volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label CRJ_MOI(((((CRJ_V * C_rho) / (EC_N / ECB_N)) / 1000.0) * ((CT_L / 1000.0) * (CT_L / 1000.0))) * (EC_N / ECB_N))    // Crankshaft rod journal(s) moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+label CW_T(CRJ_L)    // Crankshaft web(s) total thickness. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CW_H(CT_L + CRJ_D)    // Crankshaft web height. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CW_V((CRJ_D * CW_H * CW_T) / 1000.0)    // Crankshaft web(s) total volume. Calculated automatically, override only if you are a professional. //
+label CW_MOI(((1.0 / 12.0) * (((CW_V * C_rho) / ((EC_N / ECB_N) * 2.0)) / 1000.0) * (4.0 * ((CW_H / 1000.0) * (CW_H / 1000.0)) + ((CRJ_D / 1000.0) * (CRJ_D / 1000.0)))) * ((EC_N / ECB_N) * 2.0))    // Crankshaft web(s) moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+label CMB_N((EC_N / ECB_N) + 1.0)    // Crankshaft main bearings amount. Calculated automatically, but can be overridden. //
+label CMB_L(CR_T * CMB_N)    // Crankshaft main bearings total length. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CMB_D(CR_W)    // Crankshaft main bearing diameter. Calculated automatically, override only if you are a professional. Units: Millimeters. //
+label CMB_V(((constants.pi * (CMB_D * CMB_D)) * CMB_L) / 4000.0)    // Crankshaft main bearings total volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label CMB_MOI((1.0 / 2.0) * (((CMB_V * C_rho) / 1000.0) * ((CMB_D / 2000.0) * (CMB_D / 2000.0))))    // Crankshaft main bearings moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+label CC_H(CT_L)    // Crankshaft counterweight height. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CC_W(CR_W / 2.0)    // Crankshaft counterweight width. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CC_Mm(0.5)    // Crankshaft counterweight mass multiplier. Determines the "crankshaft counterweight mass/piston and connecting rod mass". Value of 0.5 for anything that does not feature a 90-degree bank separation angle is recommended. //
+label C_uM((CRJ_V + CW_V + CMB_V) * C_rho * C_Mm)    // Crankshaft unbalanced mass. Calculated automatically, override only if you are a professional. Units: grams. //
+label CC_M(C_uM + ((P_M + CR_M) * CC_Mm))    // Crankshaft counterweight(s) total mass. Calculated automatically, override only if you are a professional. Units: grams. //
+label CC_MOI(((1.0 / 12.0) * ((CC_M / 1000.0) / ((EC_N / ECB_N) * 2.0)) * (4.0 * ((CC_H / 1000.0) * (CC_H / 1000.0)) + ((CC_W / 1000.0) * (CC_W / 1000.0)))) * ((EC_N / ECB_N) * 2.0))    // Crankshaft counterweight(s) moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+label C_M(C_uM + CC_M)    // Crankshaft mass. Calculated automatically, but can be overridden. Units: grams. //
+label C_MOI(CW_MOI + CRJ_MOI + CC_MOI + CMB_MOI)    // Crankshaft moment of inertia. Calculated automatically, only override if you are a professional. Units: kilograms times meters squared. //
+label C_Fmu(((C_M / 1000.0) * 9.80665) * (0.0015 * CMB_N))    // Crankshaft friction. Calculated automatically, only override if you are a professional. Units: newton meters. //
+
+label CP_D(E_S * 0.75)    // Crankshaft pulley diameter. Calculated automatically, but can be overridden. Units: millimeters. //
+label CP_T(E_B * 0.33)    // Crankshaft pulley thickness. Calculated automatically, but can be overridden. Units: millimeters. //
+label CP_V(((constants.pi * (CP_D * CP_D)) * CP_T) / 4000.0)    // Crankshaft pulley volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label CP_rho(7.15)    // Crankshaft pulley material density. Units: grams per cubic centimeter. //
+label CP_Mm((0.5 * CP_rho) / (CP_rho / 7.15))    // Crankshaft pulley mass multiplier. Prevents the crankshaft pulley mass from being too low if light materials are used. Calculated automatically, override only if you are a professional. //
+label CP_M(CP_V * CP_rho * C_Mm)    // Crankshaft pulley mass. Calculated automatically, but can be overridden. Units: grams. //
+label CP_MOI((1.0 / 2.0) * (CP_M / 1000.0) * ((CP_D / 2000.0) * (CP_D / 2000.0)))    // Crankshaft pulley moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+label CP_Fmu(((CP_M / 1000.0) * 9.80665) * 0.0015)    // Crankshaft pulley friction. Calculated automatically, override only if you are a professional. Units: newton meters. //
+
+label CHB_M(CC_M / EC_N)    // Crankshaft harmonic balancer mass. Calculated automatically, but can be overridden. Units: grams. //
+label CHB_MOI((CHB_M / 1000.0) * ((CP_D / 2000.0) * (CP_D / 2000.0)))   // Crankshaft harmonic balancer moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+label CHB_Fmu(((CHB_M / 1000.0) * 9.80665) * 0.0015)    // Crankshaft harmonic balancer friction. Calculated automatically, override only if you are a professional. Units: newton meters. //
+
+// Crankshaft Parameters End //
+
+
+
+// Flywheel Parameters Start //
+
+label FW_D(E_S * 2.5)    // Flywheel diameter. Calculated automatically, but can be overridden. Units: millimeters. //
+label FW_T(E_B / 4.0 * (EC_N / ECB_N))    // Flywheel thickness. Calculated automatically, but can be overridden. Units: millimeters. //
+label FW_V(((constants.pi * (FW_D * FW_D)) * FW_T) / 4000.0)    // Flywheel volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label FW_rho(7.15)    // Flywheel material density. Units: grams per cubic centimeter. //
+label FW_Mm((0.15 * FW_rho) / (FW_rho / 7.15))    // Flywheel mass multiplier. Prevents the flywheel mass from being too low if lighter materials are used. Calculated automatically, override only if you are a professional. //
+label FW_M(FW_V * FW_rho * FW_Mm)    // Flywheel mass. Calculated automatically, but can be overridden. Units: grams. //
+label FW_MOI((1.0 / 2.0) * ((FW_M / 1000.0) * ((FW_D / 2000.0) * (FW_D / 2000.0))))    // Flywheel moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+label FW_Fmu(((FW_M / 1000.0) * 9.80665) * 0.0015)    // Flywheel friction. Calculated automatically, override only if you are a professional. Units: newton meters. //
+
+// Flywheel Parameters End //
+
+
+
+// Valvetrain Parameters Start //
+
+label IV_N(1.0)    // Intake valve amount. //
+label IV_D(E_B / 2.0)    // Intake valve diameter. Calculated automatically, but can be overridden. Units: millimeters. //
+label IV_L(10.0)    // Intake valve lift. Units: millimeters. //
+label IV_O(5.0 * units.deg)    // Intake valve opening event. Measured at 0.050 inches of intake valve lift. Units: degrees of crankshaft rotation before top dead center. If the valve opens after top dead center, use negative value. //
+label IV_C(45.0 * units.deg)    // Intake valve closing event. Measured at 0.050 inches of intake valve lift. Units: degrees of crankshaft rotation after bottom dead center. If the valve closes before bottom dead center, use negative value. //
+label ID(IV_O + (180.0 * units.deg) + IV_C)    // Total intake duration at 0.050 inches of intake valve lift. Calculated automatically. Units: degrees of crankshaft rotation. Do not tamper. //  
+label ID_delta(0.0)    // Difference between intake duration measured at 0.050 inches and 0.001 millimeters of intake valve lift. Units: degrees of crankshaft rotation. //
+label IV_A(((constants.pi * ((IV_D * 0.98) * (IV_D * 0.98))) / 400.0) * IV_N)    // Intake valve(s) flow cross-sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //
+label IV_Qmax(IV_A * 0.155 * 146.0)    // Intake valve(s) flow area theoretical maximum volumetric flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //
+
+
+label EV_N(1.0)    // Exhaust valve amount. //
+label EV_D(IV_D * 0.775)    // Exhaust valve diameter. Calculated automatically, but can be overridden. Units: millimeters. //
+label EV_L(10.0)    // Exhaust valve lift. Units: millimeters. //
+label EV_O(45.0 * units.deg)    // Exhaust valve opening event. Measured at 0.050 inches of exhaust valve lift. Units: degrees of crankshaft rotation before bottom dead center. If the valve opens after bottom dead center, use negative value. //
+label EV_C(5.0 * units.deg)    // Exhaust valve closing event. Measured at 0.050 inches of exhaust valve lift. Units: degrees of crankshaft rotation after top dead center. If the valve closes before top dead center, use negative value. //
+label ED(EV_O + (180.0 * units.deg) + EV_C)    // Total exhaust duration at 0.050 inches of exhaust valve lift. Calculated automatically. Units: degrees of crankshaft rotation. Do not tamper. //   
+label ED_delta(0.0)    // Difference between exhaust duration measured at 0.050 inches and 0.001 millimeters of exhaust valve lift. Units: degrees of crankshaft rotation. // 
+label EV_Oatdc(((180.0 * units.deg) - (EV_O + (ED_delta / 2.0))) / units.deg)    // Exhaust valve closing event. Measured at 0.001 millimeters of exhaust valve lift. Calculated automatically. Units: degrees of crankshaft rotation after top dead center. Do not tamper. //
+label EV_A(((constants.pi * ((EV_D * 0.98) * (EV_D * 0.98))) / 400.0) * EV_N)    // Exhaust valve(s) flow cross-sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //
+label EV_Qmax(EV_A * 0.155 * 146.0)    // Exhaust valve(s) flow area theoretical maximum volumetric flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //
+
+
+label CSIL_C(((IV_C + (180.0 * units.deg) - IV_O) / 2.0) + (360.0 * units.deg))    // Camshaft intake lobe centerline. Calculated automatically. Incorrect formula used on purpose due to limitations of legacy implementation. Units: Degrees. Do not tamper. //
+label CSIL_G(1.0)    // Camshaft intake lobe gamma(non-linearity). Higher values reduce intake valve lift at the intake event beginning and ending. Disabled if Oror's Lobe Generator is used. // 
+label CSIL_dID(100)    // Camshaft intake lobe resolution. Higher values yield smoother intake lobe generation at the expense of loading times. Disabled if Oror's Lobe Generator is used. //
+
+label CSEL_C((EV_C + (540.0 * units.deg) - EV_O) / 2.0)   // Camshaft exhaust lobe centerline. Calculated automatically. Incorrect formula used on purpose due to limitations of legacy implementation. Units: Degrees. Do not tamper. //
+label CSEL_G(1.0)    // Camshaft exhaust lobe gamma(non-linearity). Higher values reduce exhaust valve lift at the exhaust event beginning and ending. Disabled if Oror's Lobe Generator is used. // 
+label CSEL_dED(100)    // Camshaft exhaust lobe resolution. Higher values yield smoother exhaust lobe generation at the expense of loading times. Disabled if Oror's Lobe Generator is used. //
+
+
+/*
+{
+   "cam_cfg":{
+      "es_version":"0.1.14a",
+      "resolution":100,
+      "intake_volume":1.0,
+      "exhaust_volume":1.0,
+      "intake_at_lift":0.0,
+      "exhaust_at_lift":0.0,
+      "intake_trim":1.0,
+      "exhaust_trim":1.0,
+      "intake_sigma":1.0,
+      "exhaust_sigma":1.0,
+      "intake_base_mult":1.5,
+      "exhaust_base_mult":1.5,
+      "intake_cos":false,
+      "exhaust_cos":false,
+      "equal_base_radius":true,
+      "ramp_steepness":0,
+      "lift_significant_fraction":100,
+      "roller_tappet_radius": 0.1
+   }
+}
+*/
+
+
+label CS_N(1.0)    // Camshaft amount. Does not create camshafts automatically. //  
+label CS_rho(7.15)    // Camshaft material density. Units: grams per cubic centimeter. //
+label CS_Mm((0.5 * CS_rho) / (CS_rho / 7.15))    // Camshaft mass multiplier. Prevents the camshaft mass from being too low if lighter materials are used. Calculated automatically, override only if you are a professional. //
+
+
+label CSB_N((EC_N / ECB_N) + 1.0)    // Camshaft bearing amount. Calculated automatically, but can be overridden. //
+
+
+label CSS_L(CRJ_L + CMB_L)    // Camshaft base length. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CSS_D(((IV_L + EV_L) / 2.0) * 3.0)    // Camshaft base diameter. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CSS_V(((constants.pi * (CSS_D * CSS_D)) * CSS_L) / 4000.0)    // Camshaft base volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label CSS_M(CSS_V * CS_rho * CS_Mm)    // Camshaft base mass. Calculated automatically, override only if you are a professional. Units: grams. //
+label CSS_MOI((1.0 / 2.0) * (CS_M / 1000.0) * ((CSS_D / 2000.0) * (CSS_D / 2000.0)))    // Camshaft base moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+
+label CSIL_N((IV_N * EC_N) / CS_N)    // Camshaft intake lobe amount. Calculated automatically. Do not tamper. //
+label CSIL_H(IV_L)    // Camshaft intake lobe height. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CSIL_T(IV_D / 2.0)    // Camshaft intake lobe base thickness. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CSIL_V(((CSS_D * CSIL_H * CSIL_T) / 2000.0) * CSIL_N)    // Camshaft intake lobe(s) total volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label CSIL_M(CSIL_V * CS_rho * CS_Mm)    // Camshaft intake lobe(s) mass, Calculated automatically, override only if you are a professional. Units: grams. //
+label CSIL_MOI((1.0 / 12.0) * (CSIL_M / 1000.0) * ((4.0 * ((CSIL_H / 1000.0) * (CSIL_H / 1000.0))) + ((CSIL_T / 1000.0) * (CSIL_T / 1000.0))))    // Camshaft intake lobe(s) moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+
+label CSEL_N((EV_N * EC_N) / CS_N)    // Camshaft exhaust lobe amount. Calculated automatically. Do not tamper. //
+label CSEL_H(EV_L)    // Camshaft exhaust lobe height. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CSEL_T(EV_D / 2.0)    // Camshaft exhaust lobe base thickness. Calculated automatically, override only if you are a professional. Units: millimeters. //
+label CSEL_V(((CSS_D * CSEL_H * CSEL_T) / 2000.0) * CSEL_N)    // Camshaft exhaust lobe(s) volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label CSEL_M(CSEL_V * CS_rho * CS_Mm)    // Camshaft exhaust lobe(s) mass. Calculated automatically, override only if you are a professional. Units: grams. //    
+label CSEL_MOI((1.0 / 12.0) * (CSEL_M / 1000.0) * ((4.0 * ((CSEL_H / 1000.0) * (CSEL_H / 1000.0))) + ((CSEL_T / 1000.0) * (CSEL_T / 1000.0))))    // Camshaft exhaust lobe(s) moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+
+label CS_M(CSS_M + ((CSIL_M + CSEL_M) / 2.0))    // Average camshaft mass. Calculated automatically, but can be overriden. Units: grams. //
+label CS_Fmu((((CS_M / 1000.0) * 9.80665) * (0.0015 * CSB_N)) * CS_N)    // Total camshaft(s) friction. Calculated automatically, override only if you are a professional. Units: newton meters. //
+label CS_MOI((CSS_MOI + CSIL_MOI + CSEL_MOI) * CS_N)    // Total camshaft(s) moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+
+
+label CSG_D(CP_D * 2.0)    // Camshaft gear diameter. Calculated automatically. Units: millimeters. Do not tamper. //
+label CSG_T(CP_T)    // Camshaft gear thickness. Calculated automatically, but can be overridden. Units: millimeters. //
+label CSG_V(((constants.pi * (CSG_D * CSG_D)) * CSG_T) / 4000.0)    // Camshaft gear volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+label CSG_rho(7.15)    // Camshaft gear material density. Units: grams per cubic centimeter. //
+label CSG_Mm((0.5 * CSG_rho) / (CSG_rho / 7.15))    // Camshaft gear mass multiplier. Prevents the camshaft gear mass from being too low if lighter materials are used. Calculated automatically, override only if you are a professional. //
+label CSG_M(CSG_V * CSG_rho * CSG_Mm)    // Camshaft gear mass. Calculated automatically, but can be overridden. Units: grams. //
+label CSG_MOI(((1.0 / 2.0) * (CSG_M / 1000.0) * ((CSG_D / 2000.0) * (CSG_D / 2000.0))) * CS_N)    // Camshaft gear(s) total moment of inertia. Calculated automatically, override only if you are a professional. Units: kilograms times meters squared. //
+label CSG_Fmu((((CSG_M / 1000.0) * 9.80665) * 0.0015) * CS_N)    // Camshaft gear(s) friction. Calculated automatically, override only if you are a professional. Units: newton meters. //
+
+// Valvetrain Parameters End //
+
+
+
+// Cylinder Head Parameters Start //
+
+label E_CR(10.0)    // Compression ratio. Determines the "Cylinder displacement + Combustion chamber volume /Combustion chamber volume" ratio. //
+label CHCC_V(EC_Vcc / (E_CR - 1.0))    // Combustion chamber volume. Calculated automatically, override only if you are a professional. Units: cubic centimeters. //
+
+
+label CHIPT_Dm(0.70)    // Cylinder head intake port throat diameter multiplier. Determines the "intake port throat diameter/intake valve flow diameter" ratio. //
+label CHIPT_A(((constants.pi * ((IV_D * 0.98 * CHIPT_Dm) * (IV_D * 0.98 * CHIPT_Dm))) / 400.0) * IV_N)    // Cylinder head intake port throat cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //   
+label CHIPTIV_R(CHIPT_A / IV_A)    // "Cylinder head intake port throat cross sectional area/intake valve cross sectional flow area" ratio. Calculated automatically. Do not tamper. //
+label CHIPT_Qmax(CHIPT_A * 0.155 * 146.0)    // Cylinder head intake port throat theoretical maximum flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //  
+
+label CHIP_Dm(0.85)    // Cylinder head intake port diameter multiplier. Determines the "intake port upstream diameter/intake valve flow diameter" ratio. // 
+label CHIP_A(((constants.pi * ((IV_D * 0.98 * CHIP_Dm) * (IV_D * 0.98 * CHIP_Dm))) / 400.0) * IV_N)    // Cylinder head intake port upstream cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //    
+label CHIPIV_R(CHIP_A / IV_A)    // "Cylinder head intake port upstream cross sectional area/intake valve flow cross sectional area" ratio. Calculated automatically. Do not tamper. // 
+label CHIP_Qmax(CHIP_A * 0.155 * 146.0)    // Cylinder head intake port upstream theoretical maximum flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //
+
+label CHIPI_Dm(1.00)    // Cylinder head intake port inlet diameter multiplier. Determines the "intake port inlet diameter/intake port upstream diameter" ratio. // 
+label CHIPI_A(((constants.pi * ((IV_D * 0.98 * CHIP_Dm * CHIPI_Dm) * (IV_D * 0.98 * CHIP_Dm * CHIPI_Dm))) / 400.0) * IV_N)    // Cylinder head intake port inlet cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //  
+label CHIPIIV_R(CHIPI_A / IV_A)    // "Cylinder head intake port inlet area/intake valve flow cross sectional area" ratio. Calculated automatically. Do not tamper. // 
+label CHIPI_Qmax(CHIPI_A * 0.155 * 146.0)    // Cylinder head intake port inlet theoretical maximum flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //   
+
+label CHIP_Vm(0.25)    // Cylinder head intake port volume multiplier. Determines the "cylinder head intake port volume/single cylinder displacement" ratio. //  
+label CHIP_V(EC_Vcc * CHIP_Vm)    // Cylinder head intake port volume. Calculated automatically, override only if you are a professional. Units: cubic centimeters. //
+label CHIP_L((CHIP_V / CHIPT_A) * 10.0)    // Cylinder head intake port length. Calculated automatically. Incorrect formula used on purpose due to fluid simulation limitations. Units: millimeters. Do not tamper. //
+
+label CHIPIV_Ravg((CHIPIIV_R + CHIPIV_R + CHIPTIV_R) / 3.0)    // Mean average of cylinder head intake port and intake valve flow cross sectional areas ratios. Do not tamper. //  
+label CHIPTIVRavg_R(CHIPTIV_R / CHIPIV_Ravg)    // "Cylinder head intake port throat cross sectional area/intake valve flow cross sectional area/mean average intake port and intake valve flow cross sectional area ratios" ratio. //
+label CHIPIVRavg_R(CHIPIV_R / CHIPIV_Ravg)    // "Cylinder head intake port cross sectional area/intake valve flow cross sectional area/mean average intake port and intake valve flow cross sectional area ratios" ratio. //   
+label CHIPIIVRavg_R(CHIPIIV_R / CHIPIV_Ravg)    // "Cylinder head intake port inlet cross sectional area/intake valve flow cross sectional area/mean average intake port and intake valve flow cross sectional area ratios" ratio. // 
+
+label CHI_Qdm_DISABLED(1.0)    // Cylinder head intake flow at >20mm valve lift bandaid compatibility fix disabled state. Do not tamper. //
+label CHI_Qdm_ENABLED(IV_L / 10.0)    // Cylinder head intake flow at >20mm valve lift bandaid compatibility fix enabled state. Do not tamper. //
+label CHI_Qdm(CHI_Qdm_DISABLED)    // Cylinder head intake flow at >20mm valve lift bandaid compatibility fix. Works in a simliar way to "lift scale" in default Engine Simulator engines. Override "CHI_Qdm_DISABLED" with "CHI_Qdm_ENABLED" to enable. //
+
+
+label CHEPT_Dm(0.70)    // Cylinder head exhaust port throat diameter multiplier. Determines the "exhaust port throat diameter/exhaust valve flow diameter" ratio. //   
+label CHEPT_A(((constants.pi * ((IV_D * 0.98 * CHEPT_Dm) * (IV_D * 0.98 * CHEPT_Dm))) / 400.0) * EV_N)    // Cylinder head exhaust port throat cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //      
+label CHEPTEV_R(CHEPT_A / EV_A)    // "Cylinder head exhaust port throat area/exhaust valve flow area" ratio. Calculated automatically. Do not tamper. //    
+label CHEPT_Qmax(CHEPT_A * 0.155 * 146.0)    // Cylinder head exhaust port throat theoretical maximum flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //  
+
+label CHEP_Dm(0.85)    // Cylinder head exhaust port downstream diameter multiplier. Determines the "exhaust port downstream diameter/exhaust valve flow diameter" ratio. // 
+label CHEP_A(((constants.pi * ((IV_D * 0.98 * CHEP_Dm) * (IV_D * 0.98 * CHEP_Dm))) / 400.0) * EV_N)    // Cylinder head exhaust port downstream cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //      
+label CHEPEV_R(CHEP_A / EV_A)    // "Cylinder head exhaust port downstream area/exhaust valve flow area" ratio. Calculated automatically. Do not tamper. //
+label CHEP_Qmax (CHEP_A * 0.155 * 146.0)    // Cylinder head exhaust port downstream theoretical maximum flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //  
+
+label CHEPO_Dm(1.00)    // Cylinder head exhaust port outlet diameter multiplier. Determines the "exhaust port outlet diameter/exhaust port downstream diameter" ratio. //   
+label CHEPO_A(((constants.pi * ((IV_D * 0.98 * CHEP_Dm * CHEPO_Dm) * (IV_D * 0.98 * CHEP_Dm * CHEPO_Dm))) / 400.0) * EV_N)    // Cylinder head exhaust port outlet cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //      
+label CHEPOEV_R(CHEPO_A / EV_A)    // "Cylinder head exhaust port outlet area/exhaust valve flow area" ratio. Calculated automatically. Do not tamper. // 
+label CHEPO_Qmax(CHEPO_A * 0.155 * 146.0)    // Cylinder head exhaust port outlet theoretical maximum flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //  
+
+label CHEP_Vm(CHEPT_A / CHIPT_A)    // Cylinder head port volume multiplier. Determines the "Cylinder head intake port volume/Cylinder head exhaust port volume" ratio. Default multiplier ensures equal port length. //  
+label CHEP_V(CHIP_V * CHEP_Vm)    // Cylinder head exhaust port volume. Calculated automatically, override only if you are a professional. Units: cubic centimeters. //
+label CHEP_L((CHEP_V / CHEPT_A) * 10.0)    // Cylinder head exhaust port length. Calculated automatically. Incorrect formula used on purpose due to fluid simulation limitations. Units: millimeters. Do not tamper. //
+
+label CHEPEV_Ravg((CHEPOEV_R + CHEPEV_R + CHEPTEV_R) / 3.0)    // Mean average of cylinder head exhaust port and exhaust valve flow cross sectional areas ratios. Do not tamper. //   
+label CHEPTEVRavg_R(CHEPTEV_R / CHEPEV_Ravg)    // "Cylinder head exhaust port throat cross sectional area/exhaust valve flow cross sectional area/mean average exhaust port and exhaust valve flow cross sectional area ratios" ratio. // 
+label CHEPEVRavg_R(CHEPEV_R / CHEPEV_Ravg)    // "Cylinder head exhaust port cross sectional area/exhaust valve flow cross sectional area/mean average exhaust port and exhaust valve flow cross sectional area ratios" ratio. // 
+label CHEPOEVRavg_R(CHEPOEV_R / CHEPEV_Ravg)    // "Cylinder head exhaust port outlet cross sectional area/exhaust valve flow cross sectional area/mean average exhaust port and exhaust valve flow cross sectional area ratios" ratio. // 
+
+label CHE_Qdm_DISABLED(1.0)    // Cylinder head exhaust flow at >20mm valve lift bandaid compatibility fix disabled state. Do not tamper. //
+label CHE_Qdm_ENABLED(EV_L / 10.0)    // Cylinder head exhaust flow at >20mm valve lift bandaid compatibility fix enabled state. Do not tamper. //
+label CHE_Qdm(CHI_Qdm_DISABLED)    // Cylinder head exhaust flow at >20mm valve lift bandaid compatibility fix. Works in a simliar way to "lift scale" in default Engine Simulator engines. Override "CHE_Qdm_DISABLED" with "CHE_Qdm_ENABLED" to enable. //
+
+// Cylinder Head Parameters End //
+
+
+
+// Intake Parameters Start //
+
+label IM_N(1.0)    // Intake manifold amount. Does not create intake manifolds automatically. //
+label IM_VDm(1.0)   // Intake manifold velocity decay multiplier. Determines the rate of air velocity loss inside the intake manifold. //
+
+label IMR_Romega(3600.0)    // Intake manifold runner optimal RPM. Determines the engine speed at which the intake runners perform the best in theory. //
+label IMRRWT_N(12.0)    // Intake manifold runner resonance wave travel amount. Determines the theoretical amount of times the low-pressure wave travels up and down the intake runner at optimal runner RPM. //
+label IMR_L((((((1.0 / (IMR_Romega / 60.0)) * ((720.0 - ((ID / units.deg) + ID_delta)) / 360.0) * 1300.0) / 2.0) / IMRRWT_N) * 304.8) - CHIP_L)    // Intake manifold runner length. Calculated automatically, but can be overridden. Units: millimeters. //
+label IMR_A(CHIPI_A)    // Intake manifold runner cross-sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label IMR_Qmax(IMR_A * 0.155 * 146.0)    // Intake manifold runner theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Mathematical dependency. Do not tamper. //
+label IMR_Q(CHIPT_Qmax * 0.95)    // Intake manifold runner actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+
+label IMP_A((IMR_A * EC_N) / IM_N)    // Intake manifold plenum cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label IMP_Qmax(IMP_A * 0.155 * 146.0)    // Intake manifold plenum theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Mathematical dependency. Do not tamper. //
+label IMP_Q((IMR_Q * EC_N) / IM_N)    // Intake manifold plenum actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+label IMP_Vm(1.0)    // Intake manifold plenum volume multiplier. Determines the intake plenum volume in relation to the total displacement of cylinders it is feeding. //
+label IMP_V((E_Dcc * IMP_Vm) / IM_N)    // Intake manifold plenum volume. Calculated automatically, but can be overridden. Units: cubic centimeters. //
+
+label IM_AFR(14.7)    // Intake air/fuel ratio at wide-open throttle //
+label IM_AFR_Cf(0.0)    // Intake air/fuel ratio overfuel correction factor. Can be used to lean out the mixture if the idle fueling causes it to be richer than desired at wide-open throttle. //
+label IM_IT(0.999)    // Intake throttle body idle position. 1.0 is fully closed, 0.0 is fully open. //
+label IM_IF(0.0)    // Intake idle fueling. Can be used to make the air/fuel mixture richer off-throttle. 0.0 is no extra fueling. Adjustment increments of 0.1 or even 0.01 are recommended. //
+label IM_TG(1.75)    // Intake throttle body gamma(non-linearity). 1.0 is fully linear. Higher values require more input to open the throttle body by the same amount. //
+
+// Intake Parameters End //
+
+
+
+// Fuel Parameters Start //
+
+label FUEL_NAME("Gasoline")    // Fuel name. //
+label FUEL_m(114.228)    // Fuel molar mass. Units: grams per mole. Only override if you are a professional. //
+label FUEL_rho(740.0 * (units.g / units.L))    // Fuel density. Only override if you are a professional. //
+label FUEL_U(46.7 * (units.kJ / units.g))    // Fuel energy density. Only override if you are a professional. //
+label FUEL_mAFR(13.8)    // Fuel molecular air-fuel ratio. While the true stoichiometric molecular air-fuel ratio is 12.5:1, due to how Engine Simulator works, 13.8:1 is used instead to achieve mass air-fuel ratio of 14.7:1 being the stoichiometric mixture. Only override if you are a professional. //
+
+// Fuel Parameters End //
+
+
+
+// Charge Turbulence and Dilution Parameters Start //
+
+label CHARGE_TDsw(1.0)    // Charge turbulence and dilution adjustment toggle switch. Enables/disables single value turbulence and dilution adjustment. 0.0 - Off, 1.0 - On. //
+label CHARGE_TDf(67.0)    // Charge turbulence and dilution adjustment control value. Range: [0.0, 100.0]. Higher values shift the power peak higher up in the RPM range. //
+
+// Intake charge turbulence and dilution adjustment control value to power per displacement ratio reference chart. //
+// Resulting output is not exact and is a subject to deviation based on overall engine build. //
+
+// 100.0 : >150.0kW/L Power to displacement ratio. //
+// 89.0-99.0 : 90.0-150.0kW/L Power to displacement ratio. //
+// 67.0-89.0 : 55.0-90.0kW/L power to displacement ratio. //
+// 0.0-67.0 : <55.0kW/L power to displacement ratio. //
+
+label CHARGE_Tmax(1100.0 - (989.0 * CHARGE_TDsw) - (CHARGE_TDf * CHARGE_TDsw))    // Intake charge maximum turbulence. Calculated automatically, only override if you are a professional. // 
+label CHARGE_cVmax(1100.0 - (989.0 * CHARGE_TDsw) - (CHARGE_TDf * CHARGE_TDsw))    // Intake charge maximum dilution. Calculated automatically, only override if you are a professional. //
+label FUEL_etamax(0.95)    // Fuel maximum combustion efficiency. Only override if you are a professional. //
+label FUEL_etadeltamax(0.1)    // Fuel burning efficiency randomness. Only override if you are a professional. //
+label FUEL_etaminmu(0.6 - ((0.0025 * CHARGE_TDf) * CHARGE_TDsw))    // Fuel low burning efficiency attenuation. Only override if you are a professional. //
+
+
+label TFS_Rbase(4.0)    // Flame speed base multiplier. Only override if you are a professional.//
+label TFS_Rm(E_B / E_S)    // Flame speed additional multiplier. Only override if you are a professional.//
+label TFS_Ryshift(0.0)    // Flame speed shift. Only override if you are a professional.//
+
+// Charge Turbulence And Dilution Parameters End //
+
+
+
+// Exhaust Parameters Start //
+
+label EH_N(2.0)    // Exhaust headers amount. Does not create exhaust headers automatically. //
+label EH_VDm(1.0)    // Exhaust headers velocity decay multiplier. Determines the rate of exhaust gases velocity loss inside the exhaust headers. //
+label EH_BMm(0.0)    // Exhaust headers backflow mixing. Determines the tendency of exhaust gases to flow back into the cylinder. 0.0 is absence of backflow. //
+
+label EHPT_Somega(3600.0)    // Exhaust headers primary tube scavenging optimal RPM. Determines the engine speed at which the exhaust headers primary tube scavenge the best in theory. //
+label EHPT_L(((((850.0 * (360.0 - EV_Oatdc)) / EHPT_Somega) - 3.0) * 25.4) - CHEP_L)    // Exhaust headers primary tube length. Calculated automatically, but can be overridden. Units: millimeters. //
+label EHPT_A(CHEPO_A)    // Exhaust headers primary tube cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label EHPT_Qmax(EHPT_A * 0.155 * 146.0)    // Exhaust headers primary tube theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Calculated automatically. Mathematical dependency. Do not tamper. // 
+label EHPT_Q(CHEPT_Qmax * 0.95)    // Exhaust headers primary tube actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+
+label EHC_L((EHPT_L + CHEP_L) / 2.0)    // Exhaust headers collector length. Calculated automatically, but can be overridden. Units: millimeters. //
+label EHC_A(((EHPT_Q * EC_N) / 0.155 / 146.0) / EH_N)    // Exhaust headers collector cross section area. Calculated automatically, but can be overridden. Units: square centimeters. //
+label EHC_Qmax(EHC_A * 0.155 * 146.0)    // Exhaust headers collector theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Calculated automatically. Mathematical dependency. Do not tamper. // 
+label EHC_Q((EHPT_Q * EC_N) / EH_N)    // Exhaust headers collector actual volumetric flow rate. Calculated automatically, but can be overridden. Units: cubic feet per minute at 28 inches of water pressure drop. //
+label EHC_V((EHC_A * EHC_L) / 10.0)    // Exhaust headers collector volume. Calculated automatically. Do not tamper. //
+
+label EP_A(EHC_A)    // Exhaust pipe cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters //
+label EP_L(4000.0)    // Exhaust pipe length. Units: millimeters //
+label EP_V((EP_A * EP_L) / 10.0)    // Exhaust pipe volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
+
+// Exhaust Parameters End //
+
+
+
+// Vehicle Parameters Start //
+
+label V_M(1750.0)    // Vehicle mass. Units: kilograms. //
+
+label V_B(1800.0)    // Vehicle width. Units: millimeters. //
+label V_H(1300.0)    // Vehicle height. Units: millimeters. //
+
+label V_Cd(0.40)    // Vehicle drag coefficient. //
+
+label V_Frr(V_M * 9.80665 * 0.015)    // Vehicle rolling resistance. Calculated automatically, override only if you are a professional. Units: Newtons. //
+
+label V_Ls(40.0) // Vehicle stopping distance. Units: meters. //
+label V_Fb(((V_M * (27.77778 * 27.77778)) / 2.0) / V_Ls)    // Vehicle braking force. Calculated automatically, override only if you are a professional. Units: Newtons. //
+
+label T_B(265.0)    // Tire width. Units: millimeters. //
+label TA_R(55.0)    // Tire aspect ratio. Percentage. //
+label WR_D(15.0)    // Wheel rim diameter. Units: inches. //
+label W_D((((T_B * TA_R) / 2540.0) * 2.0) + WR_D)    // Wheel total diameter. Calculated automatically, override only if you are a professional. Units: inches. //
+
+// Vehicle Parameters End //
+
+
+
+// Drivetrain Parameters Start //
+
+label E_Nmax((((E_Dcc / 1000.0) * 93.2125) * 9550.0) / (E_omegamax * 0.6))    // Peak engine torque. Used in drivetrain stiffness calculations. Calculated automatically, but can be overridden after measuring it on the dynamometer. Units: newton meters. //
+
+
+label CL_Nmax(E_Nmax * 1.33)    // Clutch maximum torque. Calculated automatically, but can be overridden. Units: newton meters. //
+label CL_phimax(2.5)    // Clutch maximum torsion angle. Units: degrees. //
+label CL_phik(CL_Nmax / CL_phimax)    // Clutch torsional stiffness. Calculated automatically, override only if you are a professional. Units. newton meters per degree. //
+label CL_zeta(2.0)    // Clutch torsional damping coefficient. //
+
+
+label DR_phimax(2.5)    // Drivetrain maximum torsion angle. Units: degrees. //
+label DR_phik((CL_Nmax * 1.33) / DR_phimax)    // Drivetrain torsional stiffness. Calculated automatically, override only if you are a professional. Units: newton meters per degree. //
+label DR_zeta(2.0)    // Drivetrain torsional damping coefficient. //
+
+
+label FD_R(3.77)    // Final drive ratio //
+
+label GB_R1(3.200)    // First gear ratio. Does not create gears automatically //
+label GB_R2(2.000)    // Second gear ratio. Does not create gears automatically //
+label GB_R3(1.333)    // Third gear ratio. Does not create gears automatically //
+label GB_R4(1.000)    // Fourth gear ratio. Does not create gears automatically //
+label GB_R5(0.761)    // Fifth gear ratio. Does not create gears automatically //
+
+// Drivetrain Parameters End //
+
+
+
+// Dynamometer Parameters Start //
+
+label DYN_RPMmin(1000.0)    // Dynamometer minimum speed. Units: revolutions per minute. //
+label DYN_RPMmax(E_omegamax)    // Dynamometer maximum speed. Calculated automatically, but can be overridden. Units: revolutions per minute. //
+label DYN_dRPM(100.0)    // Dynamometer hold speed steps. Units: revolutions per minute. //
+
+// Dynamometer Parameters End //
+
+
+// Wires start //
+
+private node wires {
+    output wire1: ignition_wire();
+    output wire2: ignition_wire();
+    output wire3: ignition_wire();
+    output wire4: ignition_wire();
+    output wire5: ignition_wire();
+    output wire6: ignition_wire();
+    output wire7: ignition_wire();
+    output wire8: ignition_wire();
+    output wire9: ignition_wire();
+    output wire10: ignition_wire();
+}
+
+// Wires end //
+
+// Distributor start //
+
+public node Engine_Distributor {
+    input wires;
+    input timing_curve;
+    input rev_limit: E_omegamax * units.rpm;
+    input limiter_duration: LICO_t * units.sec;
+    alias output __out:
+        ignition_module(timing_curve: timing_curve, rev_limit: rev_limit, limiter_duration: limiter_duration)
+            .connect_wire(wires.wire1,(-1.0 * (SIM_MCf * units.deg)) +  0 * units.deg)
+            .connect_wire(wires.wire2,(-1.0 * (SIM_MCf * units.deg)) +  72 * units.deg)
+            .connect_wire(wires.wire3,(-1.0 * (SIM_MCf * units.deg)) +  144 * units.deg)
+            .connect_wire(wires.wire4,(-1.0 * (SIM_MCf * units.deg)) +  216 * units.deg)
+            .connect_wire(wires.wire5,(-1.0 * (SIM_MCf * units.deg)) +  576 * units.deg)
+            .connect_wire(wires.wire6,(-1.0 * (SIM_MCf * units.deg)) +  648 * units.deg)
+            .connect_wire(wires.wire7,(-1.0 * (SIM_MCf * units.deg)) +  288 * units.deg)
+            .connect_wire(wires.wire8,(-1.0 * (SIM_MCf * units.deg)) +  360 * units.deg)
+            .connect_wire(wires.wire9,(-1.0 * (SIM_MCf * units.deg)) +  432 * units.deg)
+            .connect_wire(wires.wire10,(-1.0 * (SIM_MCf * units.deg)) +  504 * units.deg);
+}
+
+// Distributor End //
+
+// Camshaft Lobes Start //
+
+private node add_sym_sample {
+    input angle;
+    input lift;
+    input this;
+    alias output __out: this;
+    
+    this.add_sample(angle * units.deg, lift * units.mm)
+    this.add_sample(-angle * units.deg, lift * units.mm)
+}
+
+public node Engine_Camshaft_Intake_Lobe {
+    alias output __out:
+        harmonic_cam_lobe(
+            duration_at_50_thou: ID,
+            gamma: CSIL_G,
+            lift: IV_L * units.mm,
+            steps: CSIL_dID
+        );
+}
+
+public node Engine_Camshaft_Exhaust_Lobe {
+    alias output __out:
+        harmonic_cam_lobe(
+            duration_at_50_thou: ED,
+            gamma: CSEL_G,
+            lift: EV_L * units.mm,
+            steps: CSEL_dED
+        );
+}
+ 
+// Camshaft Lobes End //
+
+// Camshafts Start //
+
+public node Engine_Camshaft_Builder {
+    output intake_cam_1: Intake_Camshaft_1;
+    output exhaust_cam_1: Exhaust_Camshaft_1;
+
+    output intake_cam_2: Intake_Camshaft_2;
+    output exhaust_cam_2: Exhaust_Camshaft_2;
+
+    camshaft_parameters Camshaft_Parameters(
+        advance: 0.0 * units.deg,
+        base_radius: (CSS_D / 2.0) * units.mm
+    )
+
+    camshaft Intake_Camshaft_1(Camshaft_Parameters, lobe_profile: Engine_Camshaft_Intake_Lobe())
+    camshaft Exhaust_Camshaft_1(Camshaft_Parameters, lobe_profile: Engine_Camshaft_Exhaust_Lobe())
+
+    camshaft Intake_Camshaft_2(Camshaft_Parameters, lobe_profile: Engine_Camshaft_Intake_Lobe())
+    camshaft Exhaust_Camshaft_2(Camshaft_Parameters, lobe_profile: Engine_Camshaft_Exhaust_Lobe())
+
+    Intake_Camshaft_1
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (0 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (144 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (576 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (288 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (432 * units.deg))
+    Exhaust_Camshaft_1
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (0 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (144 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (576 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (288 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (432 * units.deg))
+
+    Intake_Camshaft_2
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (72 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (216 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (648 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (360 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (504 * units.deg))
+    Exhaust_Camshaft_2
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (72 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (216 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (648 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (360 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (504 * units.deg))
+}
+
+// Camshafts End //
+
+// Cylinder Head Start //
+
+private node add_flow_sample {
+    input lift;
+    input flow;
+    input this;
+    alias output __out: this;
+
+    this.add_sample(lift * units.mm, k_28inH2O(flow))
+}
+
+public node Engine_Cylinder_Head {
+    input intake_camshaft;
+    input exhaust_camshaft;
+    input flip_display: false;
+    alias output __out: head;
+
+    label AIVCB(IV_A / 10.0000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_0(AIVCB * 0.000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_1(AIVCB * 1.000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_2(AIVCB * 2.000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_3(AIVCB * 3.000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_4(AIVCB * 4.000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_5(AIVCB * 5.000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_6(AIVCB * 6.000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_7(AIVCB * 7.000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_8(AIVCB * 8.000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_9(AIVCB * 9.000)    // Mathematical dependence. Do not tamper. //
+    label AIVC_10(AIVCB * 10.0)    // Mathematical dependence. Do not tamper. //
+    label AIVC_11(AIVCB * 11.0)    // Mathematical dependence. Do not tamper. //
+    label AIVC_12(AIVCB * 12.0)    // Mathematical dependence. Do not tamper. //
+    label AIVC_13(AIVCB * 13.0)    // Mathematical dependence. Do not tamper. //
+    label AIVC_14(AIVCB * 14.0)    // Mathematical dependence. Do not tamper. //
+    label AIVC_15(AIVCB * 15.0)    // Mathematical dependence. Do not tamper. //
+    label AIVC_16(AIVCB * 16.0)    // Mathematical dependence. Do not tamper. //
+    label AIVC_17(AIVCB * 17.0)    // Mathematical dependence. Do not tamper. //
+    label AIVC_18(AIVCB * 18.0)    // Mathematical dependence. Do not tamper. //
+    label AIVC_19(AIVCB * 19.0)    // Mathematical dependence. Do not tamper. //
+    label AIVC_20(AIVCB * 20.0)    // Mathematical dependence. Do not tamper. //
+
+    label AEVCB(EV_A / 10.0000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_0(AEVCB * 0.000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_1(AEVCB * 1.000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_2(AEVCB * 2.000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_3(AEVCB * 3.000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_4(AEVCB * 4.000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_5(AEVCB * 5.000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_6(AEVCB * 6.000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_7(AEVCB * 7.000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_8(AEVCB * 8.000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_9(AEVCB * 9.000)    // Mathematical dependence. Do not tamper. //
+    label AEVC_10(AEVCB * 10.0)    // Mathematical dependence. Do not tamper. //
+    label AEVC_11(AEVCB * 11.0)    // Mathematical dependence. Do not tamper. //
+    label AEVC_12(AEVCB * 12.0)    // Mathematical dependence. Do not tamper. //
+    label AEVC_13(AEVCB * 13.0)    // Mathematical dependence. Do not tamper. //
+    label AEVC_14(AEVCB * 14.0)    // Mathematical dependence. Do not tamper. //
+    label AEVC_15(AEVCB * 15.0)    // Mathematical dependence. Do not tamper. //
+    label AEVC_16(AEVCB * 16.0)    // Mathematical dependence. Do not tamper. //
+    label AEVC_17(AEVCB * 17.0)    // Mathematical dependence. Do not tamper. //
+    label AEVC_18(AEVCB * 18.0)    // Mathematical dependence. Do not tamper. //
+    label AEVC_19(AEVCB * 19.0)    // Mathematical dependence. Do not tamper. //
+    label AEVC_20(AEVCB * 20.0)    // Mathematical dependence. Do not tamper. //
+
+    function intake_flow((1.0 * CHI_Qdm) * units.mm)
+    intake_flow
+        .add_flow_sample(0.0, 0.0)
+        .add_flow_sample((1.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 0.075000187500 + (AIVC_1 / IV_A)) / ((IV_A / AIVC_1) + (CHIPTIVRavg_R * (AIVC_1 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_1 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_1 / CHIPI_A)))))
+        .add_flow_sample((2.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 0.163582149700 + (AIVC_2 / IV_A)) / ((IV_A / AIVC_2) + (CHIPTIVRavg_R * (AIVC_2 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_2 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_2 / CHIPI_A)))))
+        .add_flow_sample((3.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 0.258135208900 + (AIVC_3 / IV_A)) / ((IV_A / AIVC_3) + (CHIPTIVRavg_R * (AIVC_3 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_3 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_3 / CHIPI_A)))))
+        .add_flow_sample((4.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 0.356787370800 + (AIVC_4 / IV_A)) / ((IV_A / AIVC_4) + (CHIPTIVRavg_R * (AIVC_4 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_4 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_4 / CHIPI_A)))))
+        .add_flow_sample((5.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 0.458604179100 + (AIVC_5 / IV_A)) / ((IV_A / AIVC_5) + (CHIPTIVRavg_R * (AIVC_5 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_5 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_5 / CHIPI_A)))))
+        .add_flow_sample((6.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 0.563016090900 + (AIVC_6 / IV_A)) / ((IV_A / AIVC_6) + (CHIPTIVRavg_R * (AIVC_6 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_6 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_6 / CHIPI_A)))))
+        .add_flow_sample((7.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 0.669636689400 + (AIVC_7 / IV_A)) / ((IV_A / AIVC_7) + (CHIPTIVRavg_R * (AIVC_7 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_7 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_7 / CHIPI_A)))))
+        .add_flow_sample((8.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 0.778185322800 + (AIVC_8 / IV_A)) / ((IV_A / AIVC_8) + (CHIPTIVRavg_R * (AIVC_8 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_8 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_8 / CHIPI_A)))))
+        .add_flow_sample((9.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 0.888448259600 + (AIVC_9 / IV_A)) / ((IV_A / AIVC_9) + (CHIPTIVRavg_R * (AIVC_9 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_9 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_9 / CHIPI_A)))))
+        .add_flow_sample((10.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 1.00025693200 + (AIVC_10 / IV_A)) / ((IV_A / AIVC_10) + (CHIPTIVRavg_R * (AIVC_10 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_10 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_10 / CHIPI_A)))))
+        .add_flow_sample((11.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 1.11347476300 + (AIVC_11 / IV_A)) / ((IV_A / AIVC_11) + (CHIPTIVRavg_R * (AIVC_11 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_11 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_11 / CHIPI_A)))))
+        .add_flow_sample((12.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 1.22798869700 + (AIVC_12 / IV_A)) / ((IV_A / AIVC_12) + (CHIPTIVRavg_R * (AIVC_12 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_12 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_12 / CHIPI_A)))))
+        .add_flow_sample((13.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 1.34370350400 + (AIVC_13 / IV_A)) / ((IV_A / AIVC_13) + (CHIPTIVRavg_R * (AIVC_13 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_13 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_13 / CHIPI_A)))))
+        .add_flow_sample((14.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 1.46053780500 + (AIVC_14 / IV_A)) / ((IV_A / AIVC_14) + (CHIPTIVRavg_R * (AIVC_14 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_14 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_14 / CHIPI_A)))))
+        .add_flow_sample((15.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 1.57842119500 + (AIVC_15 / IV_A)) / ((IV_A / AIVC_15) + (CHIPTIVRavg_R * (AIVC_15 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_15 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_15 / CHIPI_A)))))
+        .add_flow_sample((16.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 1.69729213000 + (AIVC_16 / IV_A)) / ((IV_A / AIVC_16) + (CHIPTIVRavg_R * (AIVC_16 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_16 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_16 / CHIPI_A)))))
+        .add_flow_sample((17.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 1.81709632300 + (AIVC_17 / IV_A)) / ((IV_A / AIVC_17) + (CHIPTIVRavg_R * (AIVC_17 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_17 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_17 / CHIPI_A)))))
+        .add_flow_sample((18.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 1.93778550500 + (AIVC_18 / IV_A)) / ((IV_A / AIVC_18) + (CHIPTIVRavg_R * (AIVC_18 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_18 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_18 / CHIPI_A)))))
+        .add_flow_sample((19.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 2.05931646400 + (AIVC_19 / IV_A)) / ((IV_A / AIVC_19) + (CHIPTIVRavg_R * (AIVC_19 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_19 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_19 / CHIPI_A)))))
+        .add_flow_sample((20.0 * CHI_Qdm), IV_Qmax * ((CHIPIV_Ravg + 2.18165027000 + (AIVC_20 / IV_A)) / ((IV_A / AIVC_20) + (CHIPTIVRavg_R * (AIVC_20 / CHIPT_A)) + (CHIPIVRavg_R * (AIVC_20 / CHIP_A)) + (CHIPIIVRavg_R * (AIVC_20 / CHIPI_A)))))
+
+    function exhaust_flow((1.0 * CHE_Qdm) * units.mm)
+    exhaust_flow
+        .add_flow_sample(0.0, 0.0)
+        .add_flow_sample((1.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 0.07500018750 + (AEVC_1 / EV_A)) / ((EV_A / AEVC_1) + (CHEPTEVRavg_R * (AEVC_1 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_1 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_1 / CHEPO_A)))))
+        .add_flow_sample((2.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 0.16358214970 + (AEVC_2 / EV_A)) / ((EV_A / AEVC_2) + (CHEPTEVRavg_R * (AEVC_2 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_2 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_2 / CHEPO_A)))))
+        .add_flow_sample((3.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 0.25813520890 + (AEVC_3 / EV_A)) / ((EV_A / AEVC_3) + (CHEPTEVRavg_R * (AEVC_3 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_3 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_3 / CHEPO_A)))))
+        .add_flow_sample((4.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 0.35678737080 + (AEVC_4 / EV_A)) / ((EV_A / AEVC_4) + (CHEPTEVRavg_R * (AEVC_4 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_4 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_4 / CHEPO_A)))))
+        .add_flow_sample((5.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 0.45860417910 + (AEVC_5 / EV_A)) / ((EV_A / AEVC_5) + (CHEPTEVRavg_R * (AEVC_5 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_5 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_5 / CHEPO_A)))))
+        .add_flow_sample((6.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 0.56301609090 + (AEVC_6 / EV_A)) / ((EV_A / AEVC_6) + (CHEPTEVRavg_R * (AEVC_6 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_6 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_6 / CHEPO_A)))))
+        .add_flow_sample((7.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 0.66963668940 + (AEVC_7 / EV_A)) / ((EV_A / AEVC_7) + (CHEPTEVRavg_R * (AEVC_7 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_7 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_7 / CHEPO_A)))))
+        .add_flow_sample((8.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 0.77818532280 + (AEVC_8 / EV_A)) / ((EV_A / AEVC_8) + (CHEPTEVRavg_R * (AEVC_8 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_8 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_8 / CHEPO_A)))))
+        .add_flow_sample((9.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 0.88844825960 + (AEVC_9 / EV_A)) / ((EV_A / AEVC_9) + (CHEPTEVRavg_R * (AEVC_9 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_9 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_9 / CHEPO_A)))))
+        .add_flow_sample((10.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 1.0002569320 + (AEVC_10 / EV_A)) / ((EV_A / AEVC_10) + (CHEPTEVRavg_R * (AEVC_10 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_10 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_10 / CHEPO_A)))))
+        .add_flow_sample((11.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 1.1134747630 + (AEVC_11 / EV_A)) / ((EV_A / AEVC_11) + (CHEPTEVRavg_R * (AEVC_11 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_11 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_11 / CHEPO_A)))))
+        .add_flow_sample((12.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 1.2279886970 + (AEVC_12 / EV_A)) / ((EV_A / AEVC_12) + (CHEPTEVRavg_R * (AEVC_12 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_12 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_12 / CHEPO_A)))))
+        .add_flow_sample((13.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 1.3437035040 + (AEVC_13 / EV_A)) / ((EV_A / AEVC_13) + (CHEPTEVRavg_R * (AEVC_13 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_13 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_13 / CHEPO_A)))))
+        .add_flow_sample((14.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 1.4605378050 + (AEVC_14 / EV_A)) / ((EV_A / AEVC_14) + (CHEPTEVRavg_R * (AEVC_14 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_14 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_14 / CHEPO_A)))))
+        .add_flow_sample((15.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 1.5784211950 + (AEVC_15 / EV_A)) / ((EV_A / AEVC_15) + (CHEPTEVRavg_R * (AEVC_15 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_15 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_15 / CHEPO_A)))))
+        .add_flow_sample((16.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 1.6972921300 + (AEVC_16 / EV_A)) / ((EV_A / AEVC_16) + (CHEPTEVRavg_R * (AEVC_16 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_16 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_16 / CHEPO_A)))))
+        .add_flow_sample((17.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 1.8170963230 + (AEVC_17 / EV_A)) / ((EV_A / AEVC_17) + (CHEPTEVRavg_R * (AEVC_17 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_17 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_17 / CHEPO_A)))))
+        .add_flow_sample((18.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 1.9377855050 + (AEVC_18 / EV_A)) / ((EV_A / AEVC_18) + (CHEPTEVRavg_R * (AEVC_18 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_18 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_18 / CHEPO_A)))))
+        .add_flow_sample((19.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 2.0593164640 + (AEVC_19 / EV_A)) / ((EV_A / AEVC_19) + (CHEPTEVRavg_R * (AEVC_19 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_19 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_19 / CHEPO_A)))))
+        .add_flow_sample((20.0 * CHE_Qdm), EV_Qmax * ((CHEPEV_Ravg + 2.1816502700 + (AEVC_20 / EV_A)) / ((EV_A / AEVC_20) + (CHEPTEVRavg_R * (AEVC_20 / CHEPT_A)) + (CHEPEVRavg_R * (AEVC_20 / CHEP_A)) + (CHEPOEVRavg_R * (AEVC_20 / CHEPO_A)))))
+    
+    cylinder_head head(
+        chamber_volume: CHCC_V * units.cc,
+        intake_runner_cross_section_area: CHIPT_A * units.cm2,
+        intake_runner_volume: CHIP_V * units.cc,
+        exhaust_runner_cross_section_area: CHEPT_A * units.cm2,
+        exhaust_runner_volume: CHEP_V * units.cc,
+        
+        intake_port_flow: intake_flow,
+        exhaust_port_flow: exhaust_flow,
+        intake_camshaft: intake_camshaft,
+        exhaust_camshaft: exhaust_camshaft,
+        flip_display: flip_display
+    )
+}  
+
+// Cylinder Head End //
+
+// Turbulence to Flame Speed Ratio Node Start //
+
+private node Turbulence_To_Flame_Speed_Ratio {
+    alias output __out:
+        function(2.5)
+            .add_sample((0.0), (TFS_Rbase * TFS_Rm) * (0.0 + TFS_Ryshift))
+            .add_sample((2.5), (TFS_Rbase * TFS_Rm) * (2.5 + TFS_Ryshift))
+            .add_sample((5.0), (TFS_Rbase * TFS_Rm) * (5.0 + TFS_Ryshift))
+            .add_sample((7.5), (TFS_Rbase * TFS_Rm) * (7.5 + TFS_Ryshift))
+            .add_sample((10.0), (TFS_Rbase * TFS_Rm) * (10.0 + TFS_Ryshift))
+            .add_sample((12.5), (TFS_Rbase * TFS_Rm) * (12.5 + TFS_Ryshift))
+            .add_sample((15.0), (TFS_Rbase * TFS_Rm) * (15.0 + TFS_Ryshift))
+            .add_sample((17.5), (TFS_Rbase * TFS_Rm) * (17.5 + TFS_Ryshift))
+            .add_sample((20.0), (TFS_Rbase * TFS_Rm) * (20.0 + TFS_Ryshift))
+            .add_sample((22.5), (TFS_Rbase * TFS_Rm) * (22.5 + TFS_Ryshift))
+            .add_sample((25.0), (TFS_Rbase * TFS_Rm) * (25.0 + TFS_Ryshift))
+            .add_sample((27.5), (TFS_Rbase * TFS_Rm) * (27.5 + TFS_Ryshift))
+            .add_sample((30.0), (TFS_Rbase * TFS_Rm) * (30.0 + TFS_Ryshift))
+            .add_sample((32.5), (TFS_Rbase * TFS_Rm) * (32.5 + TFS_Ryshift))
+            .add_sample((35.0), (TFS_Rbase * TFS_Rm) * (35.0 + TFS_Ryshift))
+            .add_sample((37.5), (TFS_Rbase * TFS_Rm) * (37.5 + TFS_Ryshift))
+            .add_sample((40.0), (TFS_Rbase * TFS_Rm) * (40.0 + TFS_Ryshift))
+            .add_sample((42.5), (TFS_Rbase * TFS_Rm) * (42.5 + TFS_Ryshift))
+            .add_sample((45.0), (TFS_Rbase * TFS_Rm) * (45.0 + TFS_Ryshift))
+            .add_sample((47.5), (TFS_Rbase * TFS_Rm) * (47.5 + TFS_Ryshift))
+            .add_sample((50.0), (TFS_Rbase * TFS_Rm) * (50.0 + TFS_Ryshift))
+            .add_sample((52.5), (TFS_Rbase * TFS_Rm) * (52.5 + TFS_Ryshift))
+            .add_sample((55.0), (TFS_Rbase * TFS_Rm) * (55.0 + TFS_Ryshift))
+            .add_sample((57.5), (TFS_Rbase * TFS_Rm) * (57.5 + TFS_Ryshift))
+            .add_sample((60.0), (TFS_Rbase * TFS_Rm) * (60.0 + TFS_Ryshift))
+            .add_sample((62.5), (TFS_Rbase * TFS_Rm) * (62.5 + TFS_Ryshift))
+            .add_sample((65.0), (TFS_Rbase * TFS_Rm) * (65.0 + TFS_Ryshift))
+            .add_sample((67.5), (TFS_Rbase * TFS_Rm) * (67.5 + TFS_Ryshift))
+            .add_sample((70.0), (TFS_Rbase * TFS_Rm) * (70.0 + TFS_Ryshift))
+            .add_sample((72.5), (TFS_Rbase * TFS_Rm) * (72.5 + TFS_Ryshift))
+            .add_sample((75.0), (TFS_Rbase * TFS_Rm) * (75.0 + TFS_Ryshift))
+            .add_sample((77.5), (TFS_Rbase * TFS_Rm) * (77.5 + TFS_Ryshift))
+            .add_sample((80.0), (TFS_Rbase * TFS_Rm) * (80.0 + TFS_Ryshift))
+            .add_sample((82.5), (TFS_Rbase * TFS_Rm) * (82.5 + TFS_Ryshift))
+            .add_sample((85.0), (TFS_Rbase * TFS_Rm) * (85.0 + TFS_Ryshift))
+            .add_sample((87.5), (TFS_Rbase * TFS_Rm) * (87.5 + TFS_Ryshift))
+            .add_sample((90.0), (TFS_Rbase * TFS_Rm) * (90.0 + TFS_Ryshift))
+            .add_sample((92.5), (TFS_Rbase * TFS_Rm) * (92.5 + TFS_Ryshift))
+            .add_sample((95.0), (TFS_Rbase * TFS_Rm) * (95.0 + TFS_Ryshift))
+            .add_sample((97.5), (TFS_Rbase * TFS_Rm) * (97.5 + TFS_Ryshift))
+            .add_sample((100.0), (TFS_Rbase * TFS_Rm) * (100.0 + TFS_Ryshift))
+            .add_sample((102.5), (TFS_Rbase * TFS_Rm) * (102.5 + TFS_Ryshift))
+            .add_sample((105.0), (TFS_Rbase * TFS_Rm) * (105.0 + TFS_Ryshift))
+            .add_sample((107.5), (TFS_Rbase * TFS_Rm) * (107.5 + TFS_Ryshift))
+            .add_sample((110.0), (TFS_Rbase * TFS_Rm) * (110.0 + TFS_Ryshift))
+            .add_sample((112.5), (TFS_Rbase * TFS_Rm) * (112.5 + TFS_Ryshift))
+            .add_sample((115.0), (TFS_Rbase * TFS_Rm) * (115.0 + TFS_Ryshift))
+            .add_sample((117.5), (TFS_Rbase * TFS_Rm) * (117.5 + TFS_Ryshift))
+            .add_sample((120.0), (TFS_Rbase * TFS_Rm) * (120.0 + TFS_Ryshift));
+}
+
+// Turbulence to Flame Speed Ratio Node End //
+
+// Engine assembly start //
+
+public node Engine {
+    alias output __out: engine;
+
+// Miscellaneous parameters start //
+
+    engine engine(
+        name: "AMMC-CS-E-V10-72V-72C",
+        starter_torque: SM_Ftq * units.Nm,
+        starter_speed: SM_omega * units.rpm,
+        redline: TACHO_REDLINE * units.rpm,
+        fuel: fuel(
+            name: FUEL_NAME,
+            molecular_mass: FUEL_m * units.g,
+            density: FUEL_rho,
+            energy_density: FUEL_U,
+            molecular_afr: FUEL_mAFR,
+            max_burning_efficiency: FUEL_etamax,
+            burning_efficiency_randomness: FUEL_etadeltamax,
+            low_efficiency_attenuation: FUEL_etaminmu,
+            max_turbulence_effect: CHARGE_Tmax,
+            max_dilution_effect: CHARGE_cVmax,
+            turbulence_to_flame_speed_ratio: Turbulence_To_Flame_Speed_Ratio()
+        ),
+        throttle_gamma: IM_TG,
+        convolution: AUDIO_CONV,
+        hf_gain: AUDIO_HFG,
+        jitter: AUDIO_HFN,
+        noise: AUDIO_LFN,
+        simulation_frequency: SIM_f,
+        max_sle_solver_steps: SIM_SLESd,
+        fluid_simulation_steps: SIM_FSd,
+        dyno_min_speed: DYN_RPMmin * units.rpm,
+        dyno_max_speed: DYN_RPMmax * units.rpm,
+        dyno_hold_step: DYN_dRPM * units.rpm
+    )
+
+// Miscellaneous parameters end //
+
+// Wires start //
+
+    wires wires()
+
+// Wires end //
+
+// Crankshaft Start //
+
+    crankshaft Crankshaft_1(
+        throw: CT_L * units.mm,
+        mass: C_M * units.g,
+        flywheel_mass: FW_M * units.g,
+        friction_torque: (C_Fmu + CP_Fmu + CHB_Fmu + FW_Fmu + CS_Fmu + CSG_Fmu) * units.Nm,
+        moment_of_inertia: C_MOI + FW_MOI + CSS_MOI + CSIL_MOI + CSEL_MOI + CSG_MOI + CR_MOIC + CP_MOI + CHB_MOI,
+        position_x: 0.0,
+        position_y: 0.0,
+        tdc: (-1.0 * (SIM_MCf * units.deg)) + 126.0 * units.deg
+    )
+
+    rod_journal Rod_Journal_1(angle: 0 * units.deg)
+    rod_journal Rod_Journal_2(angle: 144 * units.deg)
+    rod_journal Rod_Journal_3(angle: 576 * units.deg)
+    rod_journal Rod_Journal_4(angle: 288 * units.deg)
+    rod_journal Rod_Journal_5(angle: 432 * units.deg)
+
+    Crankshaft_1
+        .add_rod_journal(Rod_Journal_1)
+        .add_rod_journal(Rod_Journal_2)
+        .add_rod_journal(Rod_Journal_3)
+        .add_rod_journal(Rod_Journal_4)
+        .add_rod_journal(Rod_Journal_5)
+
+// Crankshaft End //
+
+// Pistons Parameters Start //
+    
+    piston_parameters Piston_Parameters(
+        mass: P_M * units.g,
+        compression_height: PCH_H * units.mm,
+        wrist_pin_position: 0.0,
+        displacement: 0.0,
+        blowby: k_28inH2O(PR_B)
+    )
+
+// Pistons End //
+
+// Connecting Rods Parameters Start //
+
+    connecting_rod_parameters Connecting_Rod_Parameters(
+        mass: CR_M * units.g,
+        length: CR_L * units.mm,
+        moment_of_inertia: CR_MOI,
+        center_of_mass: 0.0
+    )
+
+// Connnecting Rods Parameters End //
+
+// Cylinder Bank Parameters Start //
+
+    cylinder_bank_parameters Cylinder_Bank_Parameters(
+        bore: E_B * units.mm,
+        deck_height: (CT_L + CR_L + PCH_H) * units.mm
+    )
+
+// Cylinder Bank Parameters End //
+
+// Intake Manifolds Start //
+    
+    intake Intake_Manifold_1(
+        plenum_cross_section_area: IMP_A * units.cm2,
+        plenum_volume: IMP_V * units.cc,
+        intake_flow_rate: k_28inH2O(IMP_Q),
+        runner_length: IMR_L * units.mm,
+        runner_flow_rate: k_28inH2O(IMR_Q),
+        idle_throttle_plate_position: IM_IT,
+        idle_flow_rate: k_carb(IM_IF),
+        molecular_afr: (13.8 + IM_AFR_Cf) * (IM_AFR / 14.7),
+        velocity_decay: IM_VDm
+    )
+
+// Intake Manifolds End //
+
+// Exhaust Headers Start //
+
+    exhaust_system_parameters Exhaust_System_Parameters(
+        length: (EHC_L + EP_L) * units.mm,
+        collector_cross_section_area: EP_A * units.cm2,
+        volume: (EHC_V + EP_V) * units.cc,
+        outlet_flow_rate: k_28inH2O(EHC_Q),
+        primary_tube_length: EHPT_L * units.mm,
+        primary_flow_rate: k_28inH2O(EHPT_Q),
+        velocity_decay: EH_VDm,
+        backflow_atmospheric_mixing: EH_BMm
+    )
+
+    exhaust_system Exhaust_Headers_1(Exhaust_System_Parameters, impulse_response: ir_lib.default_0, audio_volume: 1.0)
+    exhaust_system Exhaust_Headers_2(Exhaust_System_Parameters, impulse_response: ir_lib.default_0, audio_volume: 1.0)
+
+// Exhaust Headers End //
+
+// Cylinder Banks Start //
+
+    cylinder_bank Cylinder_Bank_1(Cylinder_Bank_Parameters, angle: 36.0 * units.deg)
+        Cylinder_Bank_1
+            .add_cylinder(
+                piston: piston(Piston_Parameters),
+                connecting_rod: connecting_rod(Connecting_Rod_Parameters),
+                rod_journal: Rod_Journal_1,
+                intake: Intake_Manifold_1,
+                exhaust_system: Exhaust_Headers_1,
+                primary_length: (0.0) * units.mm,
+                sound_attenuation: 1.00,
+                ignition_wire: wires.wire1
+            )
+            .add_cylinder(
+                piston: piston(Piston_Parameters),
+                connecting_rod: connecting_rod(Connecting_Rod_Parameters),
+                rod_journal: Rod_Journal_2,
+                intake: Intake_Manifold_1,
+                exhaust_system: Exhaust_Headers_1,
+                primary_length: (0.0) * units.mm,
+                sound_attenuation: 1.00,
+                ignition_wire: wires.wire3
+            )
+            .add_cylinder(
+                piston: piston(Piston_Parameters),
+                connecting_rod: connecting_rod(Connecting_Rod_Parameters),
+                rod_journal: Rod_Journal_3,
+                intake: Intake_Manifold_1,
+                exhaust_system: Exhaust_Headers_1,
+                primary_length: (0.0) * units.mm,
+                sound_attenuation: 1.00,
+                ignition_wire: wires.wire5
+            )
+            .add_cylinder(
+                piston: piston(Piston_Parameters),
+                connecting_rod: connecting_rod(Connecting_Rod_Parameters),
+                rod_journal: Rod_Journal_4,
+                intake: Intake_Manifold_1,
+                exhaust_system: Exhaust_Headers_1,
+                primary_length: (0.0) * units.mm,
+                sound_attenuation: 1.00,
+                ignition_wire: wires.wire7
+            )
+            .add_cylinder(
+                piston: piston(Piston_Parameters),
+                connecting_rod: connecting_rod(Connecting_Rod_Parameters),
+                rod_journal: Rod_Journal_5,
+                intake: Intake_Manifold_1,
+                exhaust_system: Exhaust_Headers_1,
+                primary_length: (0.0) * units.mm,
+                sound_attenuation: 1.00,
+                ignition_wire: wires.wire9
+            )
+
+    cylinder_bank Cylinder_Bank_2(Cylinder_Bank_Parameters, angle: -36.0 * units.deg)
+        Cylinder_Bank_2
+            .add_cylinder(
+                piston: piston(Piston_Parameters),
+                connecting_rod: connecting_rod(Connecting_Rod_Parameters),
+                rod_journal: Rod_Journal_1,
+                intake: Intake_Manifold_1,
+                exhaust_system: Exhaust_Headers_2,
+                primary_length: (0.0) * units.mm,
+                sound_attenuation: 1.00,
+                ignition_wire: wires.wire2
+            )
+            .add_cylinder(
+                piston: piston(Piston_Parameters),
+                connecting_rod: connecting_rod(Connecting_Rod_Parameters),
+                rod_journal: Rod_Journal_2,
+                intake: Intake_Manifold_1,
+                exhaust_system: Exhaust_Headers_2,
+                primary_length: (0.0) * units.mm,
+                sound_attenuation: 1.00,
+                ignition_wire: wires.wire4
+            )
+            .add_cylinder(
+                piston: piston(Piston_Parameters),
+                connecting_rod: connecting_rod(Connecting_Rod_Parameters),
+                rod_journal: Rod_Journal_3,
+                intake: Intake_Manifold_1,
+                exhaust_system: Exhaust_Headers_2,
+                primary_length: (0.0) * units.mm,
+                sound_attenuation: 1.00,
+                ignition_wire: wires.wire6
+            )
+            .add_cylinder(
+                piston: piston(Piston_Parameters),
+                connecting_rod: connecting_rod(Connecting_Rod_Parameters),
+                rod_journal: Rod_Journal_4,
+                intake: Intake_Manifold_1,
+                exhaust_system: Exhaust_Headers_2,
+                primary_length: (0.0) * units.mm,
+                sound_attenuation: 1.00,
+                ignition_wire: wires.wire8
+            )
+            .add_cylinder(
+                piston: piston(Piston_Parameters),
+                connecting_rod: connecting_rod(Connecting_Rod_Parameters),
+                rod_journal: Rod_Journal_5,
+                intake: Intake_Manifold_1,
+                exhaust_system: Exhaust_Headers_2,
+                primary_length: (0.0) * units.mm,
+                sound_attenuation: 1.00,
+                ignition_wire: wires.wire10
+            )
+    
+    engine.add_cylinder_bank(Cylinder_Bank_1)
+    engine.add_cylinder_bank(Cylinder_Bank_2)
+
+    engine.add_crankshaft(Crankshaft_1)
+
+    Engine_Camshaft_Builder camshaft()
+
+    Cylinder_Bank_1.set_cylinder_head(
+        Engine_Cylinder_Head(
+            intake_camshaft: camshaft.intake_cam_1,
+            exhaust_camshaft: camshaft.exhaust_cam_1,
+            flip_display: true
+        )
+    )
+
+    Cylinder_Bank_2.set_cylinder_head(
+        Engine_Cylinder_Head(
+            intake_camshaft: camshaft.intake_cam_2,
+            exhaust_camshaft: camshaft.exhaust_cam_2,
+            flip_display: false
+        )
+    )
+
+// Cylinder Banks End //
+
+// Ignition Start //
+
+    function timing_curve(500 * units.rpm)
+    timing_curve
+        .add_sample(0 * units.rpm, 6.0 * units.deg)
+        .add_sample(500 * units.rpm, 9.0 * units.deg)
+        .add_sample(1000 * units.rpm, 12.0 * units.deg)   
+        .add_sample(1500 * units.rpm, 14.0 * units.deg)
+        .add_sample(2000 * units.rpm, 16.0 * units.deg)
+        .add_sample(2500 * units.rpm, 18.0 * units.deg)
+	    .add_sample(3000 * units.rpm, 20.0 * units.deg)
+	    .add_sample(3500 * units.rpm, 22.0 * units.deg)   
+	    .add_sample(4000 * units.rpm, 24.0 * units.deg)
+	    .add_sample(4500 * units.rpm, 24.0 * units.deg)   
+	    .add_sample(5000 * units.rpm, 24.0 * units.deg)
+	    .add_sample(5500 * units.rpm, 24.0 * units.deg)
+        .add_sample(6000 * units.rpm, 24.0 * units.deg)   
+        .add_sample(6500 * units.rpm, 24.0 * units.deg)
+        .add_sample(7000 * units.rpm, 24.0 * units.deg)
+
+    engine.add_ignition_module(
+        Engine_Distributor(
+            wires: wires,
+            timing_curve: timing_curve
+        )
+    )
+}
+
+// Ignition End //
+
+// Engine assembly end //
+
+// Vehicle Start //
+
+public node Vehicle {
+    alias output __out:
+        vehicle(
+            mass: V_M * units.kg,
+            drag_coefficient: V_Cd,
+            cross_sectional_area: (V_B * units.mm) * (V_H * units.mm),
+            diff_ratio: FD_R,
+            tire_radius: (W_D / 2) * units.inch,
+            rolling_resistance: V_Frr * units.Nm,
+            max_brake_force: V_Fb * units.Nm,
+            simulate_flex: true,
+            stiffness: DR_phik * units.Nm / units.deg,
+            limit_flex: true,
+            max_flex: DR_phimax * units.deg,
+            damping: DR_zeta
+        );
+}
+
+// Vehicle End //
+
+// Transmission start //
+
+public node Transmission {
+    alias output __out:
+        transmission(
+            max_clutch_torque: CL_Nmax * units.Nm,
+            simulate_flex: true,
+            clutch_stiffness: CL_phik * units.Nm / units.deg,
+            limit_clutch_flex: true,
+            max_clutch_flex: CL_phimax * units.deg,
+            clutch_damping: CL_zeta
+        )
+        .add_gear(GB_R1)
+        .add_gear(GB_R2)
+        .add_gear(GB_R3)
+        .add_gear(GB_R4)
+        .add_gear(GB_R5);
+}
+
+// Transmission End //
+
+public node main {
+    set_engine(Engine())
+    set_vehicle(Vehicle())
+    set_transmission(Transmission())
+}
+
+main()

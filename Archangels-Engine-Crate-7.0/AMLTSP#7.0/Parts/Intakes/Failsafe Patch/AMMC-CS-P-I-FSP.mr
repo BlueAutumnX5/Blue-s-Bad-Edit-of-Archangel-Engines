@@ -1,0 +1,19 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine part made by Archangel Motors //
+
+
+
+// Failsafe intake manifold runner patch. Compatible with all AMMC-CS Reciprocating engines. //
+
+
+// Installation: Override corresponding part of code in your engine file with the provided code. //
+
+
+
+// Part Start //
+
+label IMR_L(((((1.0 / (IMR_Romega / 60.0)) * ((720.0 - ((ID / units.deg) + ID_delta)) / 360.0) * 1300.0) / 2.0) / IMRRWT_N) * 304.8)    // Intake manifold runner length. Calculated automatically. Units: millimeters. Do not tamper. //
+
+// Part End //

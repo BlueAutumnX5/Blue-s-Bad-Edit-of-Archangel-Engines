@@ -1,0 +1,86 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine part made by Archangel Motors //
+
+
+// Alternative firing order kit. Compatible with all 90-Degree V Angle AMMC V8 Engines. //
+
+
+// Firing order: 1-5-7-3-4-2-6-8. //
+
+
+// Installation: Override corresponding parts of code in your engine file with the provided code. //
+
+
+
+// Part Kit Start //
+
+public node Engine_Distributor {
+    input wires;
+    input timing_curve;
+    input rev_limit: E_omegamax * units.rpm;
+    input limiter_duration: LICO_t * units.sec;
+    alias output __out:
+        ignition_module(timing_curve: timing_curve, rev_limit: rev_limit, limiter_duration: limiter_duration)
+            .connect_wire(wires.wire1,(-1.0 * (SIM_MCf * units.deg)) + 0 * units.deg)
+            .connect_wire(wires.wire2,(-1.0 * (SIM_MCf * units.deg)) + 450 * units.deg)
+            .connect_wire(wires.wire3,(-1.0 * (SIM_MCf * units.deg)) + 270 * units.deg)
+            .connect_wire(wires.wire4,(-1.0 * (SIM_MCf * units.deg)) + 360 * units.deg)
+            .connect_wire(wires.wire5,(-1.0 * (SIM_MCf * units.deg)) + 90 * units.deg)
+            .connect_wire(wires.wire6,(-1.0 * (SIM_MCf * units.deg)) + 540 * units.deg)
+            .connect_wire(wires.wire7,(-1.0 * (SIM_MCf * units.deg)) + 180 * units.deg)
+            .connect_wire(wires.wire8,(-1.0 * (SIM_MCf * units.deg)) + 630 * units.deg);
+}
+
+
+
+public node Engine_Camshaft_Builder {
+    output intake_cam_1: Intake_Camshaft_1;
+    output exhaust_cam_1: Exhaust_Camshaft_1;
+
+    output intake_cam_2: Intake_Camshaft_2;
+    output exhaust_cam_2: Exhaust_Camshaft_2;
+
+    camshaft_parameters Camshaft_Parameters(
+        advance: 0.0 * units.deg,
+        base_radius: (CSS_D / 2.0) * units.mm
+    )
+
+    camshaft Intake_Camshaft_1(Camshaft_Parameters, lobe_profile: Engine_Camshaft_Intake_Lobe())
+    camshaft Exhaust_Camshaft_1(Camshaft_Parameters, lobe_profile: Engine_Camshaft_Exhaust_Lobe())
+
+    camshaft Intake_Camshaft_2(Camshaft_Parameters, lobe_profile: Engine_Camshaft_Intake_Lobe())
+    camshaft Exhaust_Camshaft_2(Camshaft_Parameters, lobe_profile: Engine_Camshaft_Exhaust_Lobe())
+
+    Intake_Camshaft_1
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (0 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (270 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (90 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (180 * units.deg))
+    Exhaust_Camshaft_1
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (0 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (270 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (90 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (180 * units.deg))
+
+    Intake_Camshaft_2
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (450 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (360 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (540 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (630 * units.deg))
+    Exhaust_Camshaft_2
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (450 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (360 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (540 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (630 * units.deg))
+}
+
+
+
+    rod_journal Rod_Journal_1(angle: 0 * units.deg)
+    rod_journal Rod_Journal_2(angle: 270 * units.deg)
+    rod_journal Rod_Journal_3(angle: 90 * units.deg)
+    rod_journal Rod_Journal_4(angle: 180 * units.deg)
+
+// Part Kit End //

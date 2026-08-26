@@ -1,0 +1,23 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine part made by Archangel Motors //
+
+
+
+// Automatic 4-Valve sizing module. Ensures large valve size and 75% exhaust-to-intake flow ratio assuming unmodified cylinder head ports. Provides sufficient volumetric flow rate assuming proper engine design. Compatible with all AMMC-CS Reciprocating engines. //
+
+
+// Installation: Override corresponding parts of code in your engine file with the provided code. //
+
+
+
+// Part Start //
+
+label IV_N(2.0)    // Intake valve amount. //
+label IV_D(E_B / 2.414)    // Intake valve diameter. Calculated automatically, but can be overridden. Units: millimeters. //
+
+label EV_N(2.0)    // Exhaust valve amount. //
+label EV_D(IV_D * 0.8625)    // Exhaust valve diameter. Calculated automatically, but can be overridden. Units: millimeters. //
+
+// Part End //

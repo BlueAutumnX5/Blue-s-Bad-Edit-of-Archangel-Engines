@@ -1,0 +1,61 @@
+// Ange The Great Engine Simulator v0.1.14A //
+// Engine Simulator Official Discord: https://discord.gg/engine-sim-official //
+
+// Engine part made by Archangel Motors //
+
+
+
+// Blank ignition advance curve. Compatible with all AMMC-CS Engines. //
+
+
+// Installation: Override corresponding parts of code in your engine file with the provided code. //
+
+
+
+// Part Start //
+
+function timing_curve(500 * units.rpm)
+    timing_curve
+        .add_sample(0 * units.rpm, 0 * units.deg)
+        .add_sample(500 * units.rpm, 0 * units.deg)
+        .add_sample(1000 * units.rpm, 0 * units.deg)   
+        .add_sample(1500 * units.rpm, 0 * units.deg)
+        .add_sample(2000 * units.rpm, 0 * units.deg)
+        .add_sample(2500 * units.rpm, 0 * units.deg)
+        .add_sample(3000 * units.rpm, 0 * units.deg)
+        .add_sample(3500 * units.rpm, 0 * units.deg)   
+        .add_sample(4000 * units.rpm, 0 * units.deg)
+        .add_sample(4500 * units.rpm, 0 * units.deg)   
+        .add_sample(5000 * units.rpm, 0 * units.deg)
+        .add_sample(5500 * units.rpm, 0 * units.deg)   
+        .add_sample(6000 * units.rpm, 0 * units.deg)
+        .add_sample(6500 * units.rpm, 0 * units.deg)   
+        .add_sample(7000 * units.rpm, 0 * units.deg)
+        .add_sample(7500 * units.rpm, 0 * units.deg)   
+        .add_sample(8000 * units.rpm, 0 * units.deg)
+        .add_sample(8500 * units.rpm, 0 * units.deg)   
+        .add_sample(9000 * units.rpm, 0 * units.deg)
+        .add_sample(9500 * units.rpm, 0 * units.deg)   
+        .add_sample(10000 * units.rpm, 0 * units.deg)
+        .add_sample(10500 * units.rpm, 0 * units.deg)   
+        .add_sample(11000 * units.rpm, 0 * units.deg)
+        .add_sample(11500 * units.rpm, 0 * units.deg)   
+        .add_sample(12000 * units.rpm, 0 * units.deg)
+        .add_sample(12500 * units.rpm, 0 * units.deg)   
+        .add_sample(13000 * units.rpm, 0 * units.deg)
+        .add_sample(13500 * units.rpm, 0 * units.deg)   
+        .add_sample(14000 * units.rpm, 0 * units.deg)
+        .add_sample(14500 * units.rpm, 0 * units.deg)   
+        .add_sample(15000 * units.rpm, 0 * units.deg)
+        .add_sample(15500 * units.rpm, 0 * units.deg)   
+        .add_sample(16000 * units.rpm, 0 * units.deg)
+        .add_sample(16500 * units.rpm, 0 * units.deg)   
+        .add_sample(17000 * units.rpm, 0 * units.deg)
+        .add_sample(17500 * units.rpm, 0 * units.deg)   
+        .add_sample(18000 * units.rpm, 0 * units.deg)
+        .add_sample(18500 * units.rpm, 0 * units.deg)   
+        .add_sample(19000 * units.rpm, 0 * units.deg)
+        .add_sample(19500 * units.rpm, 0 * units.deg)   
+        .add_sample(20000 * units.rpm, 0 * units.deg)   
+
+// Part End //
