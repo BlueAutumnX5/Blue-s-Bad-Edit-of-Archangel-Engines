@@ -7,10 +7,15 @@
 // Youtube: Dheo Tiramisu //
 // Yes, I'm Indonesian //
 
+// Three cylinders of a Honda Supra Fit, engine code NF100 LD - hence the   //
+// name. Factory NF100 LD: 50.0 x 49.5 mm, 97.1 cc, 8.8:1 compression,     //
+// two valves, air-cooled SOHC single. Three of them is 291.3 cc; this     //
+// engine reads 292.                                                       //
+//                                                                         //
 // Ported from AMLTSP#4 to AMLTSP#7.0, rebuilt on the 45-degree V angle    //
-// shared-crankpin W3 template (all three rods on one crankpin, like a     //
-// Harley V-twin but with a third cylinder), then tuned against the         //
-// simulator: idles ~900-950 rpm, 8000 rpm redline, and no rev limiter.     //
+// shared-crankpin W3 template - all three rods on one crankpin, like a    //
+// Harley V-twin but with a third cylinder - then tuned against the        //
+// simulator: idles ~1000 rpm, 8000 rpm redline, and no rev limiter.       //
 
 // Imports Start //
 
@@ -300,7 +305,7 @@ label CSG_Fmu((((CSG_M / 1000.0) * 9.80665) * 0.0015) * CS_N)    // Camshaft gea
 
 // Cylinder Head Parameters Start //
 
-label E_CR(9.0)    // Compression ratio. Determines the "Cylinder displacement + Combustion chamber volume /Combustion chamber volume" ratio. //
+label E_CR(9.0)    // Compression ratio. Determines the "Cylinder displacement + Combustion chamber volume /Combustion chamber volume" ratio. The donor NF100 LD is 8.8:1; 9.0 here. //
 label CHCC_V(EC_Vcc / (E_CR - 1.0))    // Combustion chamber volume. Calculated automatically, override only if you are a professional. Units: cubic centimeters. //
 
 
@@ -461,21 +466,21 @@ label EP_V((EP_A * EP_L) / 10.0)    // Exhaust pipe volume. Calculated automatic
 
 // Vehicle Parameters Start //
 
-label V_M(1750.0)    // Vehicle mass. Units: kilograms. //
+label V_M(120.0)    // Vehicle mass. Units: kilograms. Supra Fit kerb weight is 93 kg with its 97cc single. This carries a 292cc triple instead, so roughly 30 kg is added for the bigger engine - an estimate, not a spec figure. Wheelbase, for the record, is 1222 mm; engine-sim's vehicle model has no wheelbase input. //
 
-label V_B(1800.0)    // Vehicle width. Units: millimeters. //
-label V_H(1300.0)    // Vehicle height. Units: millimeters. //
+label V_B(700.0)    // Vehicle width. Units: millimeters. Handlebar width of a cub. //
+label V_H(1050.0)    // Vehicle height. Units: millimeters. Roughly rider height on a cub. //
 
-label V_Cd(0.40)    // Vehicle drag coefficient. //
+label V_Cd(0.70)    // Vehicle drag coefficient. Motorcycle with rider - far draggier than a car. //
 
 label V_Frr(V_M * 9.80665 * 0.015)    // Vehicle rolling resistance. Calculated automatically, override only if you are a professional. Units: Newtons. //
 
 label V_Ls(40.0) // Vehicle stopping distance. Units: meters. //
 label V_Fb(((V_M * (27.77778 * 27.77778)) / 2.0) / V_Ls)    // Vehicle braking force. Calculated automatically, override only if you are a professional. Units: Newtons. //
 
-label T_B(265.0)    // Tire width. Units: millimeters. //
-label TA_R(55.0)    // Tire aspect ratio. Percentage. //
-label WR_D(15.0)    // Wheel rim diameter. Units: inches. //
+label T_B(63.5)    // Tire width. Units: millimeters. Supra Fit runs 2.50-17; 2.50 inch = 63.5 mm. //
+label TA_R(100.0)    // Tire aspect ratio. Percentage. Old-style tyre sizing, section height about equal to width. //
+label WR_D(17.0)    // Wheel rim diameter. Units: inches. 17 inch, as the cub. //
 label W_D((((T_B * TA_R) / 2540.0) * 2.0) + WR_D)    // Wheel total diameter. Calculated automatically, override only if you are a professional. Units: inches. //
 
 // Vehicle Parameters End //
@@ -498,13 +503,12 @@ label DR_phik((CL_Nmax * 1.33) / DR_phimax)    // Drivetrain torsional stiffness
 label DR_zeta(2.0)    // Drivetrain torsional damping coefficient. //
 
 
-label FD_R(3.77)    // Final drive ratio //
+label FD_R(8.623)    // Final drive ratio Honda Supra Fit: primary reduction 4.058 times final drive 34/16 = 2.125. engine-sim applies one ratio after the gearbox, so both are folded in here. //
 
-label GB_R1(3.200)    // First gear ratio. Does not create gears automatically //
-label GB_R2(2.000)    // Second gear ratio. Does not create gears automatically //
-label GB_R3(1.333)    // Third gear ratio. Does not create gears automatically //
-label GB_R4(1.000)    // Fourth gear ratio. Does not create gears automatically //
-label GB_R5(0.761)    // Fifth gear ratio. Does not create gears automatically //
+label GB_R1(2.833)    // First gear ratio. Does not create gears automatically Honda Supra Fit four-speed rotary: 34/12 teeth. //
+label GB_R2(1.706)    // Second gear ratio. Does not create gears automatically 29/17 teeth. //
+label GB_R3(1.238)    // Third gear ratio. Does not create gears automatically 26/21 teeth. //
+label GB_R4(0.958)    // Fourth gear ratio. Does not create gears automatically 23/24 teeth - overdrive, as cubs are. //
 
 // Drivetrain Parameters End //
 
@@ -1104,8 +1108,7 @@ public node Transmission {
         .add_gear(GB_R1)
         .add_gear(GB_R2)
         .add_gear(GB_R3)
-        .add_gear(GB_R4)
-        .add_gear(GB_R5);
+        .add_gear(GB_R4);
 }
 
 // Transmission End //
