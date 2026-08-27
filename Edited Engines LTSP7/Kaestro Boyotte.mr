@@ -7,8 +7,10 @@
 // Youtube: Dheo Tiramisu //
 // Yes, I'm Indonesian //
 
-// Ported from AMLTSP#4 to AMLTSP#7.0. Values carried over from the //
-// LTSP#4 build; every parameter new in 7.0 is left at its default. //
+// Ported from AMLTSP#4 to AMLTSP#7.0, then rebuilt to match the lore:     //
+// one cylinder cut from a Detroit Diesel 8V149 (146 x 146 mm, 2.44 L),    //
+// converted to four-stroke gasoline with an aftermarket top end at 12:1,  //
+// driving a Polski Fiat 126p.                                             //
 
 // Imports Start //
 
@@ -46,11 +48,11 @@ label ECB_N(1.0)    // Cylinder bank amount. Does not create cylinder banks auto
 label E_B(146.0)    // Cylinder bore diameter. Units: millimeters. //
 label E_S(146.0)    // Piston stroke. Units: millimeters. //
 
-label E_omegamax(5000.0)    // Maximum engine speed. Units: Revolutions per minute. //
+label E_omegamax(3000.0)    // Maximum engine speed. Units: Revolutions per minute. Donor 149 is rated 1900 rpm (9.2 m/s mean piston speed); 3000 rpm here is 14.6 m/s, aggressive but survivable for a converted industrial single. //
 label LICO_t(0.0)    // Engine speed limiter ignition cut-off duration. Units: seconds. //
-label TACHO_REDLINE(E_omegamax)    // Redline. Determines at what speed the redline is drawn on the tachometer. Units: revolutions per minute. //
+label TACHO_REDLINE(3000.0)    // Redline. Determines at what speed the redline is drawn on the tachometer. Units: revolutions per minute. //
 
-label SM_omega(300.0)    // Starter speed. Units: Revolutions per minute. //
+label SM_omega(500.0)    // Starter speed. Units: Revolutions per minute. //
 label SM_Ftq(4000.0)    // Starter torque. Units: newton meters. //
 
 // Main Parameters End //
@@ -189,10 +191,10 @@ label FW_Fmu(((FW_M / 1000.0) * 9.80665) * 0.0015)    // Flywheel friction. Calc
 // Valvetrain Parameters Start //
 
 label IV_N(1.0)    // Intake valve amount. //
-label IV_D(60.0)    // Intake valve diameter. Ported literally from the LTSP#4 build. NOTE: the 7.0 default is (E_B / 2.0), which is 73.0mm at this bore - restore the formula to take 7.0's bore-relative sizing. Units: millimeters. //
+label IV_D(E_B / 2.0)    // Intake valve diameter. Calculated automatically, but can be overridden. LTSP#4 used a literal 60mm, which is only 41% of this 146mm bore; 7.0's bore-relative formula gives 73mm, a normal intake valve for a large-bore two-valve head. Units: millimeters. //
 label IV_L(10.0)    // Intake valve lift. Units: millimeters. //
-label IV_O(0.0 * units.deg)    // Intake valve opening event. Measured at 0.050 inches of intake valve lift. Units: degrees of crankshaft rotation before top dead center. If the valve opens after top dead center, use negative value. //
-label IV_C(3.0 * units.deg)    // Intake valve closing event. Measured at 0.050 inches of intake valve lift. Units: degrees of crankshaft rotation after bottom dead center. If the valve closes before bottom dead center, use negative value. //
+label IV_O(10.0 * units.deg)    // Intake valve opening event. Measured at 0.050 inches of intake valve lift. Units: degrees of crankshaft rotation before top dead center. If the valve opens after top dead center, use negative value. //
+label IV_C(45.0 * units.deg)    // Intake valve closing event. Measured at 0.050 inches of intake valve lift. Units: degrees of crankshaft rotation after bottom dead center. If the valve closes before bottom dead center, use negative value. //
 label ID(IV_O + (180.0 * units.deg) + IV_C)    // Total intake duration at 0.050 inches of intake valve lift. Calculated automatically. Units: degrees of crankshaft rotation. Do not tamper. //  
 label ID_delta(0.0)    // Difference between intake duration measured at 0.050 inches and 0.001 millimeters of intake valve lift. Units: degrees of crankshaft rotation. //
 label IV_A(((constants.pi * ((IV_D * 0.98) * (IV_D * 0.98))) / 400.0) * IV_N)    // Intake valve(s) flow cross-sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //
@@ -200,10 +202,10 @@ label IV_Qmax(IV_A * 0.155 * 146.0)    // Intake valve(s) flow area theoretical 
 
 
 label EV_N(1.0)    // Exhaust valve amount. //
-label EV_D(45.0)    // Exhaust valve diameter. Ported literally from the LTSP#4 build. NOTE: the 7.0 default is (IV_D * 0.775), which is 46.5mm at IV_D 60.0 - restore the formula to take 7.0's valve-relative sizing. Units: millimeters. //
+label EV_D(IV_D * 0.775)    // Exhaust valve diameter. Calculated automatically, but can be overridden. LTSP#4 used a literal 45mm; 7.0's valve-relative formula gives 56.6mm against the 73mm intake. Units: millimeters. //
 label EV_L(10.0)    // Exhaust valve lift. Units: millimeters. //
-label EV_O(0.0 * units.deg)    // Exhaust valve opening event. Measured at 0.050 inches of exhaust valve lift. Units: degrees of crankshaft rotation before bottom dead center. If the valve opens after bottom dead center, use negative value. //
-label EV_C(0.0 * units.deg)    // Exhaust valve closing event. Measured at 0.050 inches of exhaust valve lift. Units: degrees of crankshaft rotation after top dead center. If the valve closes before top dead center, use negative value. //
+label EV_O(45.0 * units.deg)    // Exhaust valve opening event. Measured at 0.050 inches of exhaust valve lift. Units: degrees of crankshaft rotation before bottom dead center. If the valve opens after bottom dead center, use negative value. //
+label EV_C(10.0 * units.deg)    // Exhaust valve closing event. Measured at 0.050 inches of exhaust valve lift. Units: degrees of crankshaft rotation after top dead center. If the valve closes before top dead center, use negative value. //
 label ED(EV_O + (180.0 * units.deg) + EV_C)    // Total exhaust duration at 0.050 inches of exhaust valve lift. Calculated automatically. Units: degrees of crankshaft rotation. Do not tamper. //   
 label ED_delta(0.0)    // Difference between exhaust duration measured at 0.050 inches and 0.001 millimeters of exhaust valve lift. Units: degrees of crankshaft rotation. // 
 label EV_Oatdc(((180.0 * units.deg) - (EV_O + (ED_delta / 2.0))) / units.deg)    // Exhaust valve closing event. Measured at 0.001 millimeters of exhaust valve lift. Calculated automatically. Units: degrees of crankshaft rotation after top dead center. Do not tamper. //
@@ -380,7 +382,7 @@ label IMP_Q((IMR_Q * EC_N) / IM_N)    // Intake manifold plenum actual volumetri
 label IMP_Vm(1.0)    // Intake manifold plenum volume multiplier. Determines the intake plenum volume in relation to the total displacement of cylinders it is feeding. //
 label IMP_V((E_Dcc * IMP_Vm) / IM_N)    // Intake manifold plenum volume. Calculated automatically, but can be overridden. Units: cubic centimeters. //
 
-label IM_AFR(11.72)    // Intake air/fuel ratio at wide-open throttle. Ported: LTSP#4 fed molecular_afr 11.0 against its stock 13.8, so 14.7 * (11.0 / 13.8) = 11.72 reproduces the same rich mixture. //
+label IM_AFR(11.9)    // Intake air/fuel ratio at wide-open throttle. Rich on purpose. A leaner 13.0 was tried first, but this cylinder is enormous and sits close to the combustion limit at idle - the richer mixture roughly doubled how often it will actually light. That is also what a carburetted engine on a choke does. //
 label IM_AFR_Cf(0.0)    // Intake air/fuel ratio overfuel correction factor. Can be used to lean out the mixture if the idle fueling causes it to be richer than desired at wide-open throttle. //
 label IM_IT(0.995)    // Intake throttle body idle position. 1.0 is fully closed, 0.0 is fully open. //
 label IM_IF(0.0)    // Intake idle fueling. Can be used to make the air/fuel mixture richer off-throttle. 0.0 is no extra fueling. Adjustment increments of 0.1 or even 0.01 are recommended. //
@@ -458,21 +460,21 @@ label EP_V((EP_A * EP_L) / 10.0)    // Exhaust pipe volume. Calculated automatic
 
 // Vehicle Parameters Start //
 
-label V_M(500.0)    // Vehicle mass. Units: kilograms. //
+label V_M(800.0)    // Vehicle mass. Units: kilograms. Fiat 126 kerb weight is 580-619 kg; raised to allow for a cast-iron 2.4L single replacing the 70kg 650cc twin. Estimated, not measured. //
 
-label V_B(1500.0)    // Vehicle width. Units: millimeters. //
-label V_H(1000.0)    // Vehicle height. Units: millimeters. //
+label V_B(1378.0)    // Vehicle width. Units: millimeters. Fiat 126 width. //
+label V_H(1302.0)    // Vehicle height. Units: millimeters. Fiat 126 height. //
 
-label V_Cd(0.50)    // Vehicle drag coefficient. //
+label V_Cd(0.51)    // Vehicle drag coefficient. Fiat 126 is a brick. //
 
 label V_Frr(V_M * 9.80665 * 0.015)    // Vehicle rolling resistance. Calculated automatically, override only if you are a professional. Units: Newtons. //
 
 label V_Ls(40.0) // Vehicle stopping distance. Units: meters. //
 label V_Fb(((V_M * (27.77778 * 27.77778)) / 2.0) / V_Ls)    // Vehicle braking force. Calculated automatically, override only if you are a professional. Units: Newtons. //
 
-label T_B(155.0)    // Tire width. Units: millimeters. //
-label TA_R(70.0)    // Tire aspect ratio. Percentage. //
-label WR_D(13.0)    // Wheel rim diameter. Units: inches. //
+label T_B(135.0)    // Tire width. Units: millimeters. Fiat 126: 135/80 R12. //
+label TA_R(80.0)    // Tire aspect ratio. Percentage. //
+label WR_D(12.0)    // Wheel rim diameter. Units: inches. //
 label W_D((((T_B * TA_R) / 2540.0) * 2.0) + WR_D)    // Wheel total diameter. Calculated automatically, override only if you are a professional. Units: inches. //
 
 // Vehicle Parameters End //
@@ -495,15 +497,12 @@ label DR_phik((CL_Nmax * 1.33) / DR_phimax)    // Drivetrain torsional stiffness
 label DR_zeta(2.0)    // Drivetrain torsional damping coefficient. //
 
 
-label FD_R(3.69)    // Final drive ratio //
+label FD_R(4.33)    // Final drive ratio Fiat 126 650: 9/39 crown-and-pinion. //
 
-label GB_R1(4.500)    // First gear ratio. Does not create gears automatically //
-label GB_R2(2.000)    // Second gear ratio. Does not create gears automatically //
-label GB_R3(1.333)    // Third gear ratio. Does not create gears automatically //
-label GB_R4(1.000)    // Fourth gear ratio. Does not create gears automatically //
-label GB_R5(0.750)    // Fifth gear ratio. Does not create gears automatically //
-label GB_R6(0.550)    // Sixth gear ratio. Does not create gears automatically //
-label GB_R7(0.420)    // Seventh gear ratio. Does not create gears automatically //
+label GB_R1(3.250)    // First gear ratio. Does not create gears automatically Fiat 126 four-speed. //
+label GB_R2(2.070)    // Second gear ratio. Does not create gears automatically //
+label GB_R3(1.300)    // Third gear ratio. Does not create gears automatically //
+label GB_R4(0.872)    // Fourth gear ratio. Does not create gears automatically //
 
 // Drivetrain Parameters End //
 
@@ -938,15 +937,13 @@ public node Engine {
 
     function timing_curve(500 * units.rpm)
     timing_curve
-        .add_sample(0 * units.rpm, 0 * units.deg)
-        .add_sample(300 * units.rpm, 0 * units.deg)
-        .add_sample(500 * units.rpm, 50 * units.deg)
-        .add_sample(1000 * units.rpm, 60 * units.deg)
-        .add_sample(1500 * units.rpm, 70 * units.deg)
-        .add_sample(2000 * units.rpm, 65 * units.deg)
-        .add_sample(3000 * units.rpm, 85 * units.deg)
-        .add_sample(4000 * units.rpm, 85 * units.deg)
-        .add_sample(5000 * units.rpm, 85 * units.deg)
+        .add_sample(0 * units.rpm, 20 * units.deg)
+        .add_sample(500 * units.rpm, 30 * units.deg)
+        .add_sample(1000 * units.rpm, 32 * units.deg)
+        .add_sample(1500 * units.rpm, 34 * units.deg)
+        .add_sample(2000 * units.rpm, 34 * units.deg)
+        .add_sample(2500 * units.rpm, 34 * units.deg)
+        .add_sample(3000 * units.rpm, 34 * units.deg)
 
     engine.add_ignition_module(
         Engine_Distributor(
@@ -997,10 +994,7 @@ public node Transmission {
         .add_gear(GB_R1)
         .add_gear(GB_R2)
         .add_gear(GB_R3)
-        .add_gear(GB_R4)
-        .add_gear(GB_R5)
-        .add_gear(GB_R6)
-        .add_gear(GB_R7);
+        .add_gear(GB_R4);
 }
 
 // Transmission End //
