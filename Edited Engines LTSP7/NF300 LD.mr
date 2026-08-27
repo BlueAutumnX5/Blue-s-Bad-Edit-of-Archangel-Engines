@@ -7,8 +7,10 @@
 // Youtube: Dheo Tiramisu //
 // Yes, I'm Indonesian //
 
-// Ported from AMLTSP#4 to AMLTSP#7.0. Values carried over from the //
-// LTSP#4 build; every parameter new in 7.0 is left at its default. //
+// Ported from AMLTSP#4 to AMLTSP#7.0, rebuilt on the 45-degree V angle    //
+// shared-crankpin W3 template (all three rods on one crankpin, like a     //
+// Harley V-twin but with a third cylinder), then tuned against the         //
+// simulator: idles ~900-950 rpm, 8000 rpm redline, and no rev limiter.     //
 
 // Imports Start //
 
@@ -48,7 +50,8 @@ label E_S(49.5)    // Piston stroke. Units: millimeters. //
 
 label E_omegamax(8000.0)    // Maximum engine speed. Units: Revolutions per minute. //
 label LICO_t(0.0)    // Engine speed limiter ignition cut-off duration. Units: seconds. //
-label TACHO_REDLINE(E_omegamax)    // Redline. Determines at what speed the redline is drawn on the tachometer. Units: revolutions per minute. //
+label LIM_RPM(1000000.0)    // Ignition cut-off speed. Deliberately set far beyond anything the engine can reach, so there is no rev limiter at all - like an old motorcycle, nothing stops it over-revving past the 8000 rpm redline except the valvetrain giving up. Units: revolutions per minute. //
+label TACHO_REDLINE(8000.0)    // Redline. Determines at what speed the redline is drawn on the tachometer. Units: revolutions per minute. //
 
 label SM_omega(250.0)    // Starter speed. Units: Revolutions per minute. //
 label SM_Ftq(191.0)    // Starter torque. Units: newton meters. //
@@ -367,7 +370,7 @@ label CHE_Qdm(CHI_Qdm_DISABLED)    // Cylinder head exhaust flow at >20mm valve 
 label IM_N(3.0)    // Intake manifold amount. Does not create intake manifolds automatically. //
 label IM_VDm(1.0)   // Intake manifold velocity decay multiplier. Determines the rate of air velocity loss inside the intake manifold. //
 
-label IMR_Romega(3600.0)    // Intake manifold runner optimal RPM. Determines the engine speed at which the intake runners perform the best in theory. //
+label IMR_Romega(6500.0)    // Intake manifold runner optimal RPM. Determines the engine speed at which the intake runners perform the best in theory. //
 label IMRRWT_N(12.0)    // Intake manifold runner resonance wave travel amount. Determines the theoretical amount of times the low-pressure wave travels up and down the intake runner at optimal runner RPM. //
 label IMR_L((((((1.0 / (IMR_Romega / 60.0)) * ((720.0 - ((ID / units.deg) + ID_delta)) / 360.0) * 1300.0) / 2.0) / IMRRWT_N) * 304.8) - CHIP_L)    // Intake manifold runner length. Calculated automatically, but can be overridden. Units: millimeters. //
 label IMR_A(CHIPI_A)    // Intake manifold runner cross-sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
@@ -380,9 +383,9 @@ label IMP_Q((IMR_Q * EC_N) / IM_N)    // Intake manifold plenum actual volumetri
 label IMP_Vm(1.0)    // Intake manifold plenum volume multiplier. Determines the intake plenum volume in relation to the total displacement of cylinders it is feeding. //
 label IMP_V((E_Dcc * IMP_Vm) / IM_N)    // Intake manifold plenum volume. Calculated automatically, but can be overridden. Units: cubic centimeters. //
 
-label IM_AFR(14.7)    // Intake air/fuel ratio at wide-open throttle //
+label IM_AFR(13.0)    // Intake air/fuel ratio at wide-open throttle //
 label IM_AFR_Cf(0.0)    // Intake air/fuel ratio overfuel correction factor. Can be used to lean out the mixture if the idle fueling causes it to be richer than desired at wide-open throttle. //
-label IM_IT(0.9938)    // Intake throttle body idle position. 1.0 is fully closed, 0.0 is fully open. //
+label IM_IT(0.99880)    // Intake throttle body idle position. 1.0 is fully closed, 0.0 is fully open. Tuned against the simulator: cold-start idle measured 905-950 rpm. The engine is very sensitive here - 0.99885 would not catch at all and 0.99890 dropped to 824, so this sits near the middle of the usable band. //
 label IM_IF(0.0)    // Intake idle fueling. Can be used to make the air/fuel mixture richer off-throttle. 0.0 is no extra fueling. Adjustment increments of 0.1 or even 0.01 are recommended. //
 label IM_TG(1.75)    // Intake throttle body gamma(non-linearity). 1.0 is fully linear. Higher values require more input to open the throttle body by the same amount. //
 
@@ -436,7 +439,7 @@ label EH_N(3.0)    // Exhaust headers amount. Does not create exhaust headers au
 label EH_VDm(1.0)    // Exhaust headers velocity decay multiplier. Determines the rate of exhaust gases velocity loss inside the exhaust headers. //
 label EH_BMm(0.0)    // Exhaust headers backflow mixing. Determines the tendency of exhaust gases to flow back into the cylinder. 0.0 is absence of backflow. //
 
-label EHPT_Somega(3600.0)    // Exhaust headers primary tube scavenging optimal RPM. Determines the engine speed at which the exhaust headers primary tube scavenge the best in theory. //
+label EHPT_Somega(6500.0)    // Exhaust headers primary tube scavenging optimal RPM. Determines the engine speed at which the exhaust headers primary tube scavenge the best in theory. //
 label EHPT_L(((((850.0 * (360.0 - EV_Oatdc)) / EHPT_Somega) - 3.0) * 25.4) - CHEP_L)    // Exhaust headers primary tube length. Calculated automatically, but can be overridden. Units: millimeters. //
 label EHPT_A(CHEPO_A)    // Exhaust headers primary tube cross sectional area. Calculated automatically, but can be overridden. Units: square centimeters. //
 label EHPT_Qmax(EHPT_A * 0.155 * 146.0)    // Exhaust headers primary tube theoretical maximum volumetric flow rate. Units: cubic feet per minute at 28 inches of water pressure drop. Calculated automatically. Mathematical dependency. Do not tamper. // 
@@ -510,7 +513,7 @@ label GB_R5(0.761)    // Fifth gear ratio. Does not create gears automatically /
 // Dynamometer Parameters Start //
 
 label DYN_RPMmin(1000.0)    // Dynamometer minimum speed. Units: revolutions per minute. //
-label DYN_RPMmax(E_omegamax)    // Dynamometer maximum speed. Calculated automatically, but can be overridden. Units: revolutions per minute. //
+label DYN_RPMmax(9000.0)    // Dynamometer maximum speed. Calculated automatically, but can be overridden. Units: revolutions per minute. //
 label DYN_dRPM(100.0)    // Dynamometer hold speed steps. Units: revolutions per minute. //
 
 // Dynamometer Parameters End //
@@ -531,13 +534,13 @@ private node wires {
 public node Engine_Distributor {
     input wires;
     input timing_curve;
-    input rev_limit: E_omegamax * units.rpm;
+    input rev_limit: LIM_RPM * units.rpm;
     input limiter_duration: LICO_t * units.sec;
     alias output __out:
         ignition_module(timing_curve: timing_curve, rev_limit: rev_limit, limiter_duration: limiter_duration)
             .connect_wire(wires.wire1,(-1.0 * (SIM_MCf * units.deg)) +  0 * units.deg)
-            .connect_wire(wires.wire2,(-1.0 * (SIM_MCf * units.deg)) +  450 * units.deg)
-            .connect_wire(wires.wire3,(-1.0 * (SIM_MCf * units.deg)) +  180 * units.deg);
+            .connect_wire(wires.wire2,(-1.0 * (SIM_MCf * units.deg)) +  405 * units.deg)
+            .connect_wire(wires.wire3,(-1.0 * (SIM_MCf * units.deg)) +  90 * units.deg);
 }
 
 // Distributor End //
@@ -608,14 +611,14 @@ public node Engine_Camshaft_Builder {
         .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (0 * units.deg))
 
     Intake_Camshaft_2
-        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (450 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (405 * units.deg))
     Exhaust_Camshaft_2
-        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (450 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (405 * units.deg))
 
     Intake_Camshaft_3
-        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (180 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (90 * units.deg))
     Exhaust_Camshaft_3
-        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (180 * units.deg))        
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (90 * units.deg))        
 }
 
 // Camshafts End //
@@ -862,7 +865,7 @@ public node Engine {
         moment_of_inertia: C_MOI + FW_MOI + CSS_MOI + CSIL_MOI + CSEL_MOI + CSG_MOI + CR_MOIC + CP_MOI + CHB_MOI,
         position_x: 0.0,
         position_y: 0.0,
-        tdc: (-1.0 * (SIM_MCf * units.deg)) + 180.0 * units.deg
+        tdc: (-1.0 * (SIM_MCf * units.deg)) + 135.0 * units.deg
     )
 
     rod_journal Rod_Journal_1(angle: 0 * units.deg)
@@ -965,7 +968,7 @@ public node Engine {
 
 // Cylinder Banks Start //
 
-    cylinder_bank Cylinder_Bank_1(Cylinder_Bank_Parameters, angle: 90.0 * units.deg)
+    cylinder_bank Cylinder_Bank_1(Cylinder_Bank_Parameters, angle: 45.0 * units.deg)
         Cylinder_Bank_1
             .add_cylinder(
                 piston: piston(Piston_Parameters),
@@ -991,7 +994,7 @@ public node Engine {
                 ignition_wire: wires.wire2
             )
 
-    cylinder_bank Cylinder_Bank_3(Cylinder_Bank_Parameters, angle: -90.0 * units.deg)
+    cylinder_bank Cylinder_Bank_3(Cylinder_Bank_Parameters, angle: -45.0 * units.deg)
         Cylinder_Bank_3
             .add_cylinder(
                 piston: piston(Piston_Parameters),
