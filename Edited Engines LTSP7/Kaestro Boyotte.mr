@@ -49,7 +49,8 @@ label E_B(146.0)    // Cylinder bore diameter. Units: millimeters. //
 label E_S(146.0)    // Piston stroke. Units: millimeters. //
 
 label E_omegamax(3000.0)    // Maximum engine speed. Units: Revolutions per minute. Donor 149 is rated 1900 rpm (9.2 m/s mean piston speed); 3000 rpm here is 14.6 m/s, aggressive but survivable for a converted industrial single. //
-label LICO_t(0.0)    // Engine speed limiter ignition cut-off duration. Units: seconds. //
+label LICO_t(0.01)    // Engine speed limiter ignition cut-off duration. Units: seconds. A soft limit: at 0.0 the cut has no duration and does nothing, and the engine ran away to 7300 rpm. 0.01 s is the shortest cut that still holds - it catches at 3000 and lets the engine nose about 30 rpm past before pulling it back, rather than slamming into a wall. //
+label FRIC_m(10.0)    // Global engine friction multiplier. engine-sim derives friction from bearing drag alone (a 0.0015 coefficient on component masses) and ignores piston rings, valvetrain and oil pumping, which dominate in a large cast-iron engine. Scaling the total is how this engine gets a believable idle speed. //
 label TACHO_REDLINE(3000.0)    // Redline. Determines at what speed the redline is drawn on the tachometer. Units: revolutions per minute. //
 
 label SM_omega(500.0)    // Starter speed. Units: Revolutions per minute. //
@@ -823,7 +824,7 @@ public node Engine {
         throw: CT_L * units.mm,
         mass: C_M * units.g,
         flywheel_mass: FW_M * units.g,
-        friction_torque: (C_Fmu + CP_Fmu + CHB_Fmu + FW_Fmu + CS_Fmu + CSG_Fmu) * units.Nm,
+        friction_torque: ((C_Fmu + CP_Fmu + CHB_Fmu + FW_Fmu + CS_Fmu + CSG_Fmu) * FRIC_m) * units.Nm,
         moment_of_inertia: C_MOI + FW_MOI + CSS_MOI + CSIL_MOI + CSEL_MOI + CSG_MOI + CR_MOIC + CP_MOI + CHB_MOI,
         position_x: 0.0,
         position_y: 0.0,
