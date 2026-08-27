@@ -12,10 +12,11 @@
 // two valves, air-cooled SOHC single. Three of them is 291.3 cc; this     //
 // engine reads 292.                                                       //
 //                                                                         //
-// Ported from AMLTSP#4 to AMLTSP#7.0, rebuilt on the 45-degree V angle    //
-// shared-crankpin W3 template - all three rods on one crankpin, like a    //
-// Harley V-twin but with a third cylinder - then tuned against the        //
-// simulator: idles ~1000 rpm, 8000 rpm redline, and no rev limiter.       //
+// Ported from AMLTSP#4 to AMLTSP#7.0, on the 90-degree V angle            //
+// shared-crankpin W3 template: one cylinder lying flat to the left, one   //
+// standing vertical, one flat to the right - a 180-degree fan, all three  //
+// rods sharing a single crankpin. Tuned against the simulator: idles      //
+// ~1000 rpm, 8000 rpm redline, and no rev limiter.                        //
 
 // Imports Start //
 
@@ -543,8 +544,8 @@ public node Engine_Distributor {
     alias output __out:
         ignition_module(timing_curve: timing_curve, rev_limit: rev_limit, limiter_duration: limiter_duration)
             .connect_wire(wires.wire1,(-1.0 * (SIM_MCf * units.deg)) +  0 * units.deg)
-            .connect_wire(wires.wire2,(-1.0 * (SIM_MCf * units.deg)) +  405 * units.deg)
-            .connect_wire(wires.wire3,(-1.0 * (SIM_MCf * units.deg)) +  90 * units.deg);
+            .connect_wire(wires.wire2,(-1.0 * (SIM_MCf * units.deg)) +  450 * units.deg)
+            .connect_wire(wires.wire3,(-1.0 * (SIM_MCf * units.deg)) +  180 * units.deg);
 }
 
 // Distributor End //
@@ -615,14 +616,14 @@ public node Engine_Camshaft_Builder {
         .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (0 * units.deg))
 
     Intake_Camshaft_2
-        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (405 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (450 * units.deg))
     Exhaust_Camshaft_2
-        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (405 * units.deg))
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (450 * units.deg))
 
     Intake_Camshaft_3
-        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (90 * units.deg))
+        .add_lobe(CSIL_C + (-1.0 * (SIM_MCf * units.deg)) + (180 * units.deg))
     Exhaust_Camshaft_3
-        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (90 * units.deg))        
+        .add_lobe(CSEL_C + (-1.0 * (SIM_MCf * units.deg)) + (180 * units.deg))        
 }
 
 // Camshafts End //
@@ -869,7 +870,7 @@ public node Engine {
         moment_of_inertia: C_MOI + FW_MOI + CSS_MOI + CSIL_MOI + CSEL_MOI + CSG_MOI + CR_MOIC + CP_MOI + CHB_MOI,
         position_x: 0.0,
         position_y: 0.0,
-        tdc: (-1.0 * (SIM_MCf * units.deg)) + 135.0 * units.deg
+        tdc: (-1.0 * (SIM_MCf * units.deg)) + 180.0 * units.deg
     )
 
     rod_journal Rod_Journal_1(angle: 0 * units.deg)
@@ -972,7 +973,7 @@ public node Engine {
 
 // Cylinder Banks Start //
 
-    cylinder_bank Cylinder_Bank_1(Cylinder_Bank_Parameters, angle: 45.0 * units.deg)
+    cylinder_bank Cylinder_Bank_1(Cylinder_Bank_Parameters, angle: 90.0 * units.deg)
         Cylinder_Bank_1
             .add_cylinder(
                 piston: piston(Piston_Parameters),
@@ -998,7 +999,7 @@ public node Engine {
                 ignition_wire: wires.wire2
             )
 
-    cylinder_bank Cylinder_Bank_3(Cylinder_Bank_Parameters, angle: -45.0 * units.deg)
+    cylinder_bank Cylinder_Bank_3(Cylinder_Bank_Parameters, angle: -90.0 * units.deg)
         Cylinder_Bank_3
             .add_cylinder(
                 piston: piston(Piston_Parameters),

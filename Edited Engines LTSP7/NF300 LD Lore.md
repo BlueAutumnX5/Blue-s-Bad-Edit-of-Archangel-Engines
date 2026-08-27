@@ -22,9 +22,10 @@ BlueAutumnX5's own Supra Fit. Factory figures:
 
 ## What was built from it
 
-Three of those cylinders on a single shared crankpin, banks at 45/0/−45
-degrees — the arrangement a Harley V-twin uses, with a third cylinder added.
-291.3 cc on paper; the simulator reads 292.
+Three of those cylinders on a single shared crankpin, banks at 90/0/−90
+degrees: one lying flat to the left, one standing vertical, one flat to the
+right. A 180-degree fan with all three rods on the same pin — not a boxer,
+which would need opposed crankpins. 291.3 cc on paper; the simulator reads 292.
 
 It keeps the donor's bore and stroke exactly, and sits at 9.0:1 against the
 factory 8.8:1. It drives the Supra Fit's own drivetrain: the same four-speed
