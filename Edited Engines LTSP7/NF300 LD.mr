@@ -176,7 +176,7 @@ label CHB_Fmu(((CHB_M / 1000.0) * 9.80665) * 0.0015)    // Crankshaft harmonic b
 
 // Flywheel Parameters Start //
 
-label FW_D(E_S * 2.5)    // Flywheel diameter. Calculated automatically, but can be overridden. Units: millimeters. //
+label FW_D(180.0)    // Flywheel diameter. Units: millimeters. Overridden from the template's (E_S * 2.5) = 124mm, which left this engine with only 0.0107 kg m^2 of rotating inertia - about what a single 97cc cylinder carries, on a three-cylinder engine - so it snapped back to idle in ~1.2s from 12800 rpm. 180mm gives 0.026 kg m^2, inside the 0.02-0.04 range a real 292cc triple would have with crank, flywheel and clutch, and takes ~2.8s. Widening the disc rather than adding mass: inertia goes as m*r^2, so the same effect by mass alone needs a 124mm flywheel 16cm thick. //
 label FW_T(E_B / 4.0 * (EC_N / ECB_N))    // Flywheel thickness. Calculated automatically, but can be overridden. Units: millimeters. //
 label FW_V(((constants.pi * (FW_D * FW_D)) * FW_T) / 4000.0)    // Flywheel volume. Calculated automatically. Units: cubic centimeters. Do not tamper. //
 label FW_rho(7.15)    // Flywheel material density. Units: grams per cubic centimeter. //
