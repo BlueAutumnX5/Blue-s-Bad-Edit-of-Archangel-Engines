@@ -8,9 +8,38 @@
 // Yes, I'm Indonesian //
 
 // Ported from AMLTSP#4 to AMLTSP#7.0, then rebuilt to match the lore:     //
-// one cylinder cut from a Detroit Diesel 8V149 (146 x 146 mm, 2.44 L),    //
-// converted to four-stroke gasoline with an aftermarket top end at 12:1,  //
-// driving a Polski Fiat 126p.                                             //
+// one cylinder cut from a Detroit Diesel 8V149T (146 x 146 mm, 2.44 L),   //
+// turbocharged but not intercooled, converted from two-stroke to          //
+// four-stroke - which is where the name comes from, and which is also     //
+// why it runs 21.0:1 rather than the Detroit's published 17.0:1 - and     //
+// driving a Polski Fiat 126p through a ZF 7DT seven-speed.                //
+//                                                                         //
+// TWO THINGS ENGINE SIMULATOR CANNOT DO, AND WHAT STANDS IN FOR THEM:     //
+//                                                                         //
+// 1. Compression ignition. There is no cetane number and no injection     //
+//    event anywhere in the model, only a spark. What IS computed - the    //
+//    21.0:1 compression, diesel density and energy density, and a flat    //
+//    injection-style timing curve - is set below. The spark stands in     //
+//    for the injector.                                                    //
+//                                                                         //
+// 2. Forced induction. There is no compressor, no boost pressure, no      //
+//    wastegate and no intercooler; manifold pressure is atmospheric        //
+//    minus throttle loss. But the intake runner resonance already gives    //
+//    about 146 percent volumetric efficiency, which is roughly 1.46 bar    //
+//    absolute in the manifold - about 0.46 bar, or 6.7 psi, of boost.     //
+//    Wrong mechanism, right magnitude, and period-correct for a 1970s     //
+//    Detroit. Measured output is 301.1 Nm and 101 hp, which is 15.5 bar   //
+//    BMEP: a turbocharged diesel number. Naturally aspirated diesels sit  //
+//    at 7-9 bar, and this engine measured 158.9 Nm / 8.2 bar back at      //
+//    17.0:1 with the mixture leaned to lambda 1.2 - so an NA version is   //
+//    two labels away if the lore ever wants it.                           //
+//                                                                         //
+// Measured cold-start, this file as it stands: idle 631-635 rpm, peak     //
+// 301.1 Nm at roughly 2200 rpm, 101 hp, limiter holding 3000 with about   //
+// 32 rpm of overshoot. Going 17.0:1 -> 21.0:1 was worth +3.8 percent      //
+// torque and +7 percent power, and moved idle up only 30 rpm - modest,    //
+// because engine-sim has no knock model, so the extra compression buys    //
+// thermodynamic efficiency and nothing else.                              //
 
 // Imports Start //
 
@@ -49,7 +78,7 @@ label E_B(146.0)    // Cylinder bore diameter. Units: millimeters. //
 label E_S(146.0)    // Piston stroke. Units: millimeters. //
 
 label E_omegamax(3000.0)    // Maximum engine speed. Units: Revolutions per minute. Donor 149 is rated 1900 rpm (9.2 m/s mean piston speed); 3000 rpm here is 14.6 m/s, aggressive but survivable for a converted industrial single. //
-label LICO_t(0.01)    // Engine speed limiter ignition cut-off duration. Units: seconds. A soft limit: at 0.0 the cut has no duration and does nothing, and the engine ran away to 7300 rpm. 0.01 s is the shortest cut that still holds - it catches at 3000 and lets the engine nose about 30 rpm past before pulling it back, rather than slamming into a wall. //
+label LICO_t(0.01)    // Engine speed limiter ignition cut-off duration. Units: seconds. A soft limit: at 0.0 the cut has no duration and does nothing, and the engine ran away to 7300 rpm. 0.01 s is the shortest cut that still holds - it catches at 3000 and lets the engine nose past before pulling it back, rather than slamming into a wall. Re-measured after the diesel conversion, five wide-open-throttle runs: 3010, 3032, 3041, 3044, 3053 rpm. Roughly 45 rpm of overshoot, and the extra compression did not break it. //
 label FRIC_m(10.0)    // Global engine friction multiplier. engine-sim derives friction from bearing drag alone (a 0.0015 coefficient on component masses) and ignores piston rings, valvetrain and oil pumping, which dominate in a large cast-iron engine. Scaling the total is how this engine gets a believable idle speed. //
 label TACHO_REDLINE(3000.0)    // Redline. Determines at what speed the redline is drawn on the tachometer. Units: revolutions per minute. //
 
@@ -202,8 +231,8 @@ label IV_A(((constants.pi * ((IV_D * 0.98) * (IV_D * 0.98))) / 400.0) * IV_N)   
 label IV_Qmax(IV_A * 0.155 * 146.0)    // Intake valve(s) flow area theoretical maximum volumetric flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //
 
 
-label EV_N(1.0)    // Exhaust valve amount. //
-label EV_D(IV_D * 0.775)    // Exhaust valve diameter. Calculated automatically, but can be overridden. LTSP#4 used a literal 45mm; 7.0's valve-relative formula gives 56.6mm against the 73mm intake. Units: millimeters. //
+label EV_N(4.0)    // Exhaust valve amount. The one valvetrain detail that genuinely transfers from the donor: a Series 149 cylinder has four exhaust valves in the head and no intake valves at all, because air arrives through ports in the liner. The camshaft timing cannot come across (see ENGINE-NOTES.md 2b) but the valve count can. The four-stroke conversion has to cut an intake valve into a head that never had one, so this is a five-valve head. //
+label EV_D(34.0)    // Exhaust valve diameter. Units: millimeters. Sized by packing rather than by formula: four heads on an arc at 45mm radius, 3mm apart, reach 62mm from bore centre against a 73mm bore radius, and clear the 73mm intake by 63mm centre to centre. The Detroit's own exhaust valves are nearer 49mm - scaling the 71-series' 1.44in on its 108mm bore - because it has no intake valve stealing half the head. Keeping the big intake is what forces these down to 34mm: the conversion keeps the valve count, not the valve size. Lift stays 10mm, an aggressive 0.29 of valve diameter. //
 label EV_L(10.0)    // Exhaust valve lift. Units: millimeters. //
 label EV_O(15.0 * units.deg)    // Exhaust valve opening event. Measured at 0.050 inches of exhaust valve lift. Units: degrees of crankshaft rotation before bottom dead center. If the valve opens after bottom dead center, use negative value. //
 label EV_C(5.0 * units.deg)    // Exhaust valve closing event. Measured at 0.050 inches of exhaust valve lift. Units: degrees of crankshaft rotation after top dead center. If the valve closes before top dead center, use negative value. //
@@ -300,7 +329,7 @@ label CSG_Fmu((((CSG_M / 1000.0) * 9.80665) * 0.0015) * CS_N)    // Camshaft gea
 
 // Cylinder Head Parameters Start //
 
-label E_CR(12.0)    // Compression ratio. Determines the "Cylinder displacement + Combustion chamber volume /Combustion chamber volume" ratio. //
+label E_CR(21.0)    // Compression ratio. Determines the "Cylinder displacement + Combustion chamber volume /Combustion chamber volume" ratio. NOT Detroit's published 17.0:1, and deliberately so. A two-stroke uniflow quotes its ratio from LINER PORT CLOSURE, not from BDC: the piston is already partway up the bore before the ports seal, so only part of the stroke actually compresses anything. Nobody decked this head or changed this piston - the clearance volume is the Detroit's own - but a four-stroke compresses the WHOLE 146 mm, so the same hardware arrives at a higher number. Taking the liner ports as the bottom 20 percent of the stroke: the two-stroke compresses 0.8 x 2444 cc, so 17.0:1 means a 122 cc chamber, and 2444/122 + 1 = 21.0:1 on four strokes. The ratio changed because the cycle changed, not because anyone modified the engine. The 20 percent port height is an assumption, not a published figure - it is the one soft number in this line. The old 12.0 was a gasoline figure from the superseded aftermarket-top-end lore. //
 label CHCC_V(EC_Vcc / (E_CR - 1.0))    // Combustion chamber volume. Calculated automatically, override only if you are a professional. Units: cubic centimeters. //
 
 
@@ -334,17 +363,17 @@ label CHI_Qdm(CHI_Qdm_DISABLED)    // Cylinder head intake flow at >20mm valve l
 
 
 label CHEPT_Dm(0.70)    // Cylinder head exhaust port throat diameter multiplier. Determines the "exhaust port throat diameter/exhaust valve flow diameter" ratio. //   
-label CHEPT_A(((constants.pi * ((IV_D * 0.98 * CHEPT_Dm) * (IV_D * 0.98 * CHEPT_Dm))) / 400.0) * EV_N)    // Cylinder head exhaust port throat cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //      
+label CHEPT_A(((constants.pi * ((EV_D * 0.98 * CHEPT_Dm) * (EV_D * 0.98 * CHEPT_Dm))) / 400.0) * EV_N)    // Cylinder head exhaust port throat cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. FIXED: every AMLTSP#7.0 template ships this and the two formulas below reading IV_D, the INTAKE valve diameter, while CHEPT_Dm right above is documented as a fraction of the exhaust valve. Harmless while there is one exhaust valve the same rough size as the intake; fatal at EV_N 4, where it would claim a port throat 2.26 times the total valve area. //      
 label CHEPTEV_R(CHEPT_A / EV_A)    // "Cylinder head exhaust port throat area/exhaust valve flow area" ratio. Calculated automatically. Do not tamper. //    
 label CHEPT_Qmax(CHEPT_A * 0.155 * 146.0)    // Cylinder head exhaust port throat theoretical maximum flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //  
 
 label CHEP_Dm(0.85)    // Cylinder head exhaust port downstream diameter multiplier. Determines the "exhaust port downstream diameter/exhaust valve flow diameter" ratio. // 
-label CHEP_A(((constants.pi * ((IV_D * 0.98 * CHEP_Dm) * (IV_D * 0.98 * CHEP_Dm))) / 400.0) * EV_N)    // Cylinder head exhaust port downstream cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //      
+label CHEP_A(((constants.pi * ((EV_D * 0.98 * CHEP_Dm) * (EV_D * 0.98 * CHEP_Dm))) / 400.0) * EV_N)    // Cylinder head exhaust port downstream cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //      
 label CHEPEV_R(CHEP_A / EV_A)    // "Cylinder head exhaust port downstream area/exhaust valve flow area" ratio. Calculated automatically. Do not tamper. //
 label CHEP_Qmax (CHEP_A * 0.155 * 146.0)    // Cylinder head exhaust port downstream theoretical maximum flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //  
 
 label CHEPO_Dm(1.00)    // Cylinder head exhaust port outlet diameter multiplier. Determines the "exhaust port outlet diameter/exhaust port downstream diameter" ratio. //   
-label CHEPO_A(((constants.pi * ((IV_D * 0.98 * CHEP_Dm * CHEPO_Dm) * (IV_D * 0.98 * CHEP_Dm * CHEPO_Dm))) / 400.0) * EV_N)    // Cylinder head exhaust port outlet cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //      
+label CHEPO_A(((constants.pi * ((EV_D * 0.98 * CHEP_Dm * CHEPO_Dm) * (EV_D * 0.98 * CHEP_Dm * CHEPO_Dm))) / 400.0) * EV_N)    // Cylinder head exhaust port outlet cross sectional area. Calculated automatically, override only if you are a professional. Units: square centimeters. //      
 label CHEPOEV_R(CHEPO_A / EV_A)    // "Cylinder head exhaust port outlet area/exhaust valve flow area" ratio. Calculated automatically. Do not tamper. // 
 label CHEPO_Qmax(CHEPO_A * 0.155 * 146.0)    // Cylinder head exhaust port outlet theoretical maximum flow rate. Calculated automatically. Units: cubic feet per minute at 28 inches of water pressure drop. Do not tamper. //  
 
@@ -383,9 +412,9 @@ label IMP_Q((IMR_Q * EC_N) / IM_N)    // Intake manifold plenum actual volumetri
 label IMP_Vm(1.0)    // Intake manifold plenum volume multiplier. Determines the intake plenum volume in relation to the total displacement of cylinders it is feeding. //
 label IMP_V((E_Dcc * IMP_Vm) / IM_N)    // Intake manifold plenum volume. Calculated automatically, but can be overridden. Units: cubic centimeters. //
 
-label IM_AFR(11.9)    // Intake air/fuel ratio at wide-open throttle. Rich on purpose. A leaner 13.0 was tried first, but this cylinder is enormous and sits close to the combustion limit at idle - the richer mixture roughly doubled how often it will actually light. That is also what a carburetted engine on a choke does. //
+label IM_AFR(11.9)    // Intake air/fuel ratio at wide-open throttle, on the template's gasoline scale where 14.7 is stoichiometric - so this is lambda 0.81. Rich on purpose, and it is now the engine's single biggest output lever. Measured cold-start dyno at 17.0:1, one label changed and nothing else: lambda 0.81 gave 291.6 Nm / 94 hp / 15.0 bar BMEP, and lambda 1.2 (IM_AFR 17.6) gave 158.9 Nm / 49 hp / 8.2 bar. At the 21.0:1 this file now runs, lambda 0.81 measures 301.1 Nm / 101 hp / 15.5 bar. The first is a turbocharged diesel, the second a naturally aspirated one. Since the donor is an 8V149T, this stays rich: it is the over-fuelling that stands in for boost the simulator will not model. A real turbo diesel this rich smokes black, which is entirely in character. //
 label IM_AFR_Cf(0.0)    // Intake air/fuel ratio overfuel correction factor. Can be used to lean out the mixture if the idle fueling causes it to be richer than desired at wide-open throttle. //
-label IM_IT(0.996)    // Intake throttle body idle position. 1.0 is fully closed, 0.0 is fully open. //
+label IM_IT(0.997)    // Intake throttle body idle position. 1.0 is fully closed, 0.0 is fully open. Retuned for the diesel: 0.996 was set when compression was 12.0 and gave a 650 rpm idle, but 17.0:1 makes enough extra torque to push the same setting to 806. Measured on cold starts at 17.0:1 - 0.996 gives 795-820, 0.997 gives 596-605, and 0.998 will not light at all. The usable window is that narrow, so change this in steps of 0.001 and expect the engine to die just past it. Raising compression to 21.0:1 moved 0.997 up to 631-635, which is still inside the target band, so it was left alone. //
 label IM_IF(0.0)    // Intake idle fueling. Can be used to make the air/fuel mixture richer off-throttle. 0.0 is no extra fueling. Adjustment increments of 0.1 or even 0.01 are recommended. //
 label IM_TG(1.75)    // Intake throttle body gamma(non-linearity). 1.0 is fully linear. Higher values require more input to open the throttle body by the same amount. //
 
@@ -395,11 +424,11 @@ label IM_TG(1.75)    // Intake throttle body gamma(non-linearity). 1.0 is fully 
 
 // Fuel Parameters Start //
 
-label FUEL_NAME("Gasoline")    // Fuel name. //
-label FUEL_m(114.228)    // Fuel molar mass. Units: grams per mole. Only override if you are a professional. //
-label FUEL_rho(740.0 * (units.g / units.L))    // Fuel density. Only override if you are a professional. //
-label FUEL_U(46.7 * (units.kJ / units.g))    // Fuel energy density. Only override if you are a professional. //
-label FUEL_mAFR(13.8)    // Fuel molecular air-fuel ratio. While the true stoichiometric molecular air-fuel ratio is 12.5:1, due to how Engine Simulator works, 13.8:1 is used instead to achieve mass air-fuel ratio of 14.7:1 being the stoichiometric mixture. Only override if you are a professional. //
+label FUEL_NAME("Diesel")    // Fuel name. //
+label FUEL_m(198.39)    // Fuel molar mass. Units: grams per mole. n-tetradecane, C14H30 - the standard single-component stand-in for diesel, the way the template used iso-octane (C8H18, 114.228) for gasoline. //
+label FUEL_rho(832.0 * (units.g / units.L))    // Fuel density. EN 590 diesel is 820-845 kg/m3 at 15 C; 832 is mid-range. Gasoline was 740. //
+label FUEL_U(45.6 * (units.kJ / units.g))    // Fuel energy density. Gross calorific value, the same basis as the template's 46.7 for gasoline. Diesel carries slightly less energy per kilogram but about 10 percent more per litre (37.9 MJ/L against 34.6), which is where a diesel's fuel economy actually comes from - watch the KM/L readout. //
+label FUEL_mAFR(23.74)    // Fuel molecular air-fuel ratio. Engine Simulator wants moles of O2 per mole of fuel: C14H30 + 21.5 O2 -> 14 CO2 + 15 H2O gives 21.5, times the same 1.104 correction the template applies to gasoline (12.5 -> 13.8). The intake manifold molecular_afr below is tied to this label - if it is left at a literal 13.8 the mixture goes savagely rich and the engine will not light. //
 
 // Fuel Parameters End //
 
@@ -484,7 +513,7 @@ label W_D((((T_B * TA_R) / 2540.0) * 2.0) + WR_D)    // Wheel total diameter. Ca
 
 // Drivetrain Parameters Start //
 
-label E_Nmax((((E_Dcc / 1000.0) * 93.2125) * 9550.0) / (E_omegamax * 0.6))    // Peak engine torque. Used in drivetrain stiffness calculations. Calculated automatically, but can be overridden after measuring it on the dynamometer. Units: newton meters. //
+label E_Nmax(300.0)    // Peak engine torque. Used in drivetrain stiffness calculations. Overridden after measuring it on the dynamometer, exactly as the template invites. The formula it replaces - (((E_Dcc / 1000.0) * 93.2125) * 9550.0) / (E_omegamax * 0.6) - assumes a generic high-revving engine and returns about 1209 Nm here, four times what this engine makes. Measured peak is 290 Nm; 300 is rounded up to leave headroom. This feeds CL_Nmax, so the clutch is now rated 1000 Nm rather than 4029 - still comfortably above both the engine and the ZF 7DT-70 gearbox it drives. Units: newton meters. //
 
 
 label CL_Nmax(E_Nmax * 3.333)    // Clutch maximum torque. Calculated automatically, but can be overridden. Units: newton meters. Ported: LTSP#4 used a 3.333 factor against its stock 1.333. //
@@ -498,12 +527,24 @@ label DR_phik((CL_Nmax * 1.33) / DR_phimax)    // Drivetrain torsional stiffness
 label DR_zeta(2.0)    // Drivetrain torsional damping coefficient. //
 
 
-label FD_R(4.33)    // Final drive ratio Fiat 126 650: 9/39 crown-and-pinion. //
+label FD_R(3.44)    // Final drive ratio. The ZF 7DT-70's own final drive, taken with the gearset rather than keeping the Fiat 126's 4.33 - the point of the swap is the long legs. //
 
-label GB_R1(3.250)    // First gear ratio. Does not create gears automatically Fiat 126 four-speed. //
-label GB_R2(2.070)    // Second gear ratio. Does not create gears automatically //
-label GB_R3(1.300)    // Third gear ratio. Does not create gears automatically //
-label GB_R4(0.872)    // Fourth gear ratio. Does not create gears automatically //
+// Gearbox: ZF 7DT-70, the seven-speed twin-clutch built for the 911 Turbo  //
+// and Turbo S (997 and 991). Rated to 780 Nm, which is the reason for      //
+// choosing it over a motorsport sequential - a 2.4-litre single makes far  //
+// more torque than revs, and every purpose-built seven-speed sequential is //
+// close-ratio (a Hewland CST runs 3.083 down to 1.227, a spread of 2.5).   //
+// The 7DT spreads 3.91 to 0.62, a ratio of 6.3, which is what "long        //
+// gearing" actually means. Seventh is a genuine overdrive this engine can  //
+// never pull to the limiter - that is the intent, not a mistake.           //
+
+label GB_R1(3.910)    // First gear ratio. Does not create gears automatically. ZF 7DT-70. 21.9 km/h at the 3000 rpm limiter. //
+label GB_R2(2.290)    // Second gear ratio. Does not create gears automatically. 37.4 km/h at the limiter. //
+label GB_R3(1.580)    // Third gear ratio. Does not create gears automatically. 54.2 km/h at the limiter. //
+label GB_R4(1.180)    // Fourth gear ratio. Does not create gears automatically. 72.6 km/h at the limiter. //
+label GB_R5(0.940)    // Fifth gear ratio. Does not create gears automatically. 91.1 km/h at the limiter. //
+label GB_R6(0.790)    // Sixth gear ratio. Does not create gears automatically. 108.4 km/h at the limiter. //
+label GB_R7(0.620)    // Seventh gear ratio. Does not create gears automatically. 138.1 km/h at the limiter on paper; a Fiat 126 shape at 800 kg needs about 48 hp at the wheels to hold that, so this is a cruising gear, not a top-speed gear. //
 
 // Drivetrain Parameters End //
 
@@ -780,7 +821,7 @@ public node Engine {
 // Miscellaneous parameters start //
 
     engine engine(
-        name: "Kaestro Boyotte MKI",
+        name: "149 Quad-Cycle Single",
         starter_torque: SM_Ftq * units.Nm,
         starter_speed: SM_omega * units.rpm,
         redline: TACHO_REDLINE * units.rpm,
@@ -880,7 +921,7 @@ public node Engine {
         runner_flow_rate: k_28inH2O(IMR_Q),
         idle_throttle_plate_position: IM_IT,
         idle_flow_rate: k_carb(IM_IF),
-        molecular_afr: (13.8 + IM_AFR_Cf) * (IM_AFR / 14.7),
+        molecular_afr: (FUEL_mAFR + IM_AFR_Cf) * (IM_AFR / 14.7),
         velocity_decay: IM_VDm
     )
 
@@ -936,15 +977,23 @@ public node Engine {
 
 // Ignition Start //
 
+    // Flat, because this is standing in for a Detroit unit injector. A
+    // spark-ignition engine advances hard with rpm (this one used to run
+    // 20 deg at rest rising to 34 deg by 1500) because the flame needs a
+    // fixed amount of TIME to cross the bore, so it needs more crank
+    // DEGREES as the crank turns faster. A mechanically timed unit
+    // injector has no advance mechanism at all - it fires where the cam
+    // lobe puts it, at every speed. Holding one number across the range is
+    // the closest this simulator can come to that.
     function timing_curve(500 * units.rpm)
     timing_curve
         .add_sample(0 * units.rpm, 20 * units.deg)
-        .add_sample(500 * units.rpm, 30 * units.deg)
-        .add_sample(1000 * units.rpm, 32 * units.deg)
-        .add_sample(1500 * units.rpm, 34 * units.deg)
-        .add_sample(2000 * units.rpm, 34 * units.deg)
-        .add_sample(2500 * units.rpm, 34 * units.deg)
-        .add_sample(3000 * units.rpm, 34 * units.deg)
+        .add_sample(500 * units.rpm, 20 * units.deg)
+        .add_sample(1000 * units.rpm, 20 * units.deg)
+        .add_sample(1500 * units.rpm, 20 * units.deg)
+        .add_sample(2000 * units.rpm, 20 * units.deg)
+        .add_sample(2500 * units.rpm, 20 * units.deg)
+        .add_sample(3000 * units.rpm, 20 * units.deg)
 
     engine.add_ignition_module(
         Engine_Distributor(
@@ -995,7 +1044,10 @@ public node Transmission {
         .add_gear(GB_R1)
         .add_gear(GB_R2)
         .add_gear(GB_R3)
-        .add_gear(GB_R4);
+        .add_gear(GB_R4)
+        .add_gear(GB_R5)
+        .add_gear(GB_R6)
+        .add_gear(GB_R7);
 }
 
 // Transmission End //
