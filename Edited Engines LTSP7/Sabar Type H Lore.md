@@ -3,7 +3,7 @@
 A **hit and miss** engine. One cylinder, 997 cc, governed to 500 rpm, driving a
 workshop line shaft off its own flywheel by flat belt.
 
-*Sabar* is Indonesian for **patient**. It fires about once every seventeen
+*Sabar* is Indonesian for **patient**. It fires about once every thirteen
 revolutions and spends the rest of its life coasting, which seemed worth naming
 it for. *Type H* for hit and miss.
 
@@ -97,12 +97,11 @@ Cold start, this file as committed, no load:
 
 | | |
 |---|---|
-| Cadence | fires, then coasts ~17 revolutions, repeat |
-| Speed range | roughly 456-575 rpm around the governed 500 |
+| Cadence | fires at 481-495, then coasts ~13 revolutions, repeat |
+| Speed range | roughly 464-579 rpm around the governed 500 |
 | Coast-down rate | 60-62 rpm/s |
 | Total drag during a miss | 10.7 Nm (4.6 friction, 6.1 pumping) |
-| Under load, gear 3 | 453-566 rpm, still hit-and-missing |
-| Under load, gear 5 | 468-581 rpm, still hit-and-missing |
+| Gear 4, brake held | 393-549 rpm, still hit-and-missing, never stalls |
 
 Peak torque was **not** taken from the dynamometer - that UI is close to unusable
 on an engine this slow, for reasons written up in `ENGINE-NOTES.md`. It came from
@@ -123,18 +122,54 @@ governed speed is a band, not a line.
 
 ### The one thing that had to be tuned
 
-`LICO_t` - the length of the miss - was 2.0 s at first. Unloaded it was lovely.
-Under load the engine fired once and died, every time.
+`LICO_t`, the length of the miss. The limiter's dwell is a fixed **time**, not a
+speed, so the engine always fires later the harder it happens to be
+decelerating. A real flyball governor re-engages on speed and does it instantly.
+This is the one place engine-sim genuinely mismodels the mechanism, and it is
+invisible until something is hanging off the flywheel.
 
-The cause is that the limiter's timer re-arms on *any* tick above the set speed
-and then demands `LICO_t` seconds of continuous running below it, so every
-overshoot buys a **mandatory blackout** of that length. Unloaded, the flywheel
-coasts through it. Loaded, the load drags the engine to a standstill inside those
-two seconds and it can never earn its spark back.
+| `LICO_t` | unloaded, fires at | braking in 4th, fires at |
+|---|---|---|
+| 2.0 | fine | **fired once and died, every gear** |
+| 1.0 | 438-456 | 357-390 |
+| **0.35** | **481-495** | **393-427** |
 
-A real flyball governor re-engages on *speed*, instantly. The fixed timer is the
-one place engine-sim genuinely mismodels this mechanism, and it only shows up
-under load. At 1.0 s the engine keeps running in every gear.
+At 2.0 s every overshoot bought a mandatory two second blackout, and under load
+the engine was dragged to a standstill inside it and could never earn its spark
+back. At 0.35 it fires just under the governed speed, which is what the real
+thing does, and the miss is still long because most of it is the engine decaying
+off its own 577 rpm overshoot rather than the timer running.
+
+**It should not go much lower.** One four-stroke cycle at 500 rpm takes 0.24 s,
+and the limiter tests the *instantaneous* crank speed, which dips below the limit
+during every compression stroke. Once the dwell is shorter than a cycle the timer
+expires inside those dips, the spark returns, and the governor leaks: the engine
+just keeps firing above its governed speed. 0.35 sits deliberately just above one
+cycle.
+
+## The drivetrain, which the template gets wrong three times
+
+Everything below the flywheel had to be rebuilt, because the template's formulas
+assume a car:
+
+**The clutch** was the worst of them. `CL_Nmax = E_Nmax * 1.33` assumes peak
+torque is about a third above the mean, which is true of a multi-cylinder engine
+whose power strokes overlap. This engine fires once every thirteen revolutions:
+its mean is 21 Nm but the measured peak is **158 Nm**, a pulse ratio of 7.5:1. So
+the clutch was rated at a sixth of what actually arrives and slipped on every
+single hit. Nothing downstream can feel right while that is happening. It is now
+a flat 250 Nm.
+
+**The brake** came out of a formula that sizes it to stop a car from 100 km/h in
+40 m, giving 1447 N against an engine that can only put 160 N through the belt in
+the top step. It was up to nine times stronger than the entire engine, so
+touching it stalled the motor outright. Now 350 N, which is a shop friction brake
+on the countershaft: a wooden block on a strap.
+
+**The gearing** spanned 12.0:1 down to 2.37:1 in 1.5 steps, with over 1000 N
+available in bottom. Wide steps are pointless here because the engine has no rev
+range to drop into. It is now a proper five step cone pulley in true 4:3 steps,
+6.0:1 down to 1.9:1.
 
 ## The line shaft
 
