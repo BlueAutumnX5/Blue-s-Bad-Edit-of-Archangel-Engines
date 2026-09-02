@@ -64,12 +64,39 @@ length of the miss.
 | Output | ~21 Nm, ~1.4 hp, 2.6 bar BMEP |
 | Valves | 2 × 38 mm - one atmospheric intake, one cam-driven exhaust |
 | Ignition | make-and-break igniter, fixed 20° BTDC, no advance |
-| Flywheels | 500 mm, 46.7 kg for the pair, 89% of all rotating inertia |
+| Flywheels | 500 mm, 46.7 kg for the pair, 91% of all rotating inertia |
 | Fuel | gasoline, rich (lambda ~0.88) through a fixed mixer |
 
 Mean piston speed at the governed 500 rpm is **2.12 m/s**, about a fifth of a
 modern engine. That is why a thing like this can be built out of cast iron and
 babbitt and still be running eighty years later.
+
+### The flywheels, and why the template gets them wrong
+
+Checked against real engines of this exact size. A 1938 **John Deere 1.5 HP**
+runs 17.5 inch flywheels and weighs 226 lb (103 kg) all up; another 1.5 HP of the
+period uses 25 inch wheels with a 2.25 inch rim; a **Galloway 1.5 HP** ships at
+140 lb. On a roughly 100 kg engine the flywheels are typically getting on for
+half the total weight.
+
+So 500 mm and 46.7 kg for the pair is right where it should be, and sits inside
+the real 445 to 635 mm range.
+
+**The inertia was not right.** The template computes a solid disc:
+
+    FW_MOI = (1/2) * m * r^2        ->  1.459 kg.m2
+
+A flywheel is not a disc. It is a spoked wheel with almost all of its iron in the
+rim, deliberately, because putting the mass at the largest possible radius is the
+entire reason the thing exists. Splitting it the way a real casting is built,
+85% in the rim at 0.88 of the outer radius and 15% in hub and spokes at 0.35,
+gives **1.975 kg.m2** instead. The template was understating the real flywheel by
+**35%**.
+
+That is not a detail on this engine. The flywheel is 91% of all rotating inertia,
+and the inertia is exactly what decides how long it coasts through a miss. The
+correction slows the coast from 62 to 47 rpm/s, which makes the whole thing
+lazier and more like the real article.
 
 ### The atmospheric intake valve
 
@@ -175,10 +202,68 @@ range to drop into. It is now a proper five step cone pulley in true 4:3 steps,
 
 There is no vehicle. engine-sim requires one, so the "vehicle" is the shop: the
 flat belt runs on the face of the flywheel itself (which is why the wheel
-diameter is set to 500 mm and the tyre is zeroed out), `FD_R` is the main belt
-down to the line shaft, and the five "gears" are the five steps of a cone pulley
-on the countershaft - which is genuinely how a shop of this period changed the
-speed of a machine. You stop, you lever the belt across a step, you start again.
+diameter is 500 mm and the tyre is zeroed out), the main belt to the line shaft
+is 1:1, and the five "gears" are the five steps of a cone pulley on the
+countershaft. That is genuinely how a shop of this period changed the speed of a
+machine: you stop, you lever the belt across a step, you start again.
+
+| step | ratio | belt speed |
+|---|---|---|
+| 1 | 1.848 | 25 km/h |
+| 2 | 1.307 | 36 km/h |
+| 3 | 0.924 | 51 km/h |
+| 4 | 0.653 | 72 km/h |
+| 5 | 0.462 | **100 km/h** |
+
+Root-two steps, a spread of 4.0. The fast step is where the belt finally runs at
+the speed it was built for: 100 km/h is 27.8 m/s, and real flat belts run at 15
+to 30 m/s.
+
+### The vehicle "weight" is 11 kg, and that is correct
+
+It looks absurd next to a 100 kg engine. The trap is reading `V_M` as the weight
+of a machine. It is not. `transmission.cpp` turns it into a **rotating inertia**,
+`I = V_M * f * f`, so what it actually describes is the inertia of whatever the
+engine spins, and **a 100 kg engine bolted to a concrete block contributes
+exactly zero**. Only the turning parts count.
+
+For a real small-shop line shaft those are: a 50 mm shaft ten metres long, which
+is only 0.05 kg.m2 because its radius is tiny, and four 500 mm pulleys at 25 kg
+each, which are 3.1. About **3.2 kg.m2** all told, and in the fast step that
+needs `V_M` of about 11 kg.
+
+It had been 400, then 150, then 80, dropped each time because the engine could
+not pull the shop. Every one of those was too high for the same wrong reason:
+they were being read as weights. 80 kg was producing 23.4 kg.m2, seven times a
+real line shaft, which is why a 1.4 hp engine took minutes to wind it up.
+
+### How the speed readout actually works
+
+Worth writing down, because it is not what it looks like. engine-sim reports
+speed by energy equivalence:
+
+```cpp
+const double E_r = 0.5 * m_rotatingMass->I * v_theta * v_theta;
+return std::sqrt(2 * E_r / m_mass);
+```
+
+`Vehicle::getSpeed` never mentions the tyre radius, which suggests the radius is
+irrelevant and the vehicle mass matters. Both are wrong. `transmission.cpp` sets
+that virtual body up as
+
+```cpp
+const double f = tire_radius / (diff_ratio * gear_ratio);
+m_rotatingMass->I = m_car * f * f;
+m_rotatingMass->m = m_car;
+```
+
+so the mass cancels straight back out and the whole thing collapses to
+`speed = omega_engine * f`. It is plain kinematics after all: **the vehicle mass
+has no effect on speed whatsoever**, and the tyre radius sets it completely.
+`V_M` only decides how much inertia and rolling drag the engine has to fight.
+
+Checked before it was trusted: the previous 1.899 overall read 23 km/h at 467
+rpm, against 23.2 predicted.
 
 ## The story
 
