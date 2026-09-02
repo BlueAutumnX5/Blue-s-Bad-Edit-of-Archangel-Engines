@@ -68,7 +68,7 @@ length of the miss.
 | Displacement | 997.5 cc / 60.9 cu in |
 | Compression | 4.0:1 |
 | Governed speed | 500 rpm |
-| Output | ~21 Nm, ~1.4 hp, 2.6 bar BMEP |
+| Output | 78.5 Nm and 5.5 hp at the governed 500 rpm, 9.9 bar BMEP |
 | Valves | 2 × 38 mm - one atmospheric intake, one cam-driven exhaust |
 | Ignition | make-and-break igniter, fixed 20° BTDC, no advance |
 | Flywheels | 500 mm, 46.7 kg for the pair, 91% of all rotating inertia |
@@ -136,17 +136,40 @@ Cold start, this file as committed, no load:
 | Coast-down rate | 60-62 rpm/s |
 | Total drag during a miss | 10.7 Nm (4.6 friction, 6.1 pumping) |
 | Gear 4, brake held | 393-549 rpm, still hit-and-missing, never stalls |
+| Torque, on the dyno | 53.8 Nm at 200 rpm, 62.2 at 300, 70.7 at 400, 78.5 at 500 |
 
-Peak torque was **not** taken from the dynamometer - that UI is close to unusable
-on an engine this slow, for reasons written up in `ENGINE-NOTES.md`. It came from
-the engine's own dynamics instead, which is better evidence anyway: the rotating
-inertia is known exactly (1.643 kg·m²), so the energy the flywheel gives up
-during a miss and puts back during the hits gives 2.6 bar BMEP and ~21 Nm
-directly.
+Torque climbs all the way to the governed speed, so the governor happens to cut
+in exactly at peak. Every point is consistent on `P = T * omega`.
 
-1.4 hp from a litre is exactly the historical rating for an engine of this
-class, and 2.6 bar BMEP sits right in the 2-4 bar band a low-compression 1900s
-stationary engine belongs in.
+### The peak torque figure was wrong for a while, and how
+
+This file first claimed **21 Nm and 1.4 hp**. It came from the engine's own
+dynamics rather than the dyno, because the dyno looks unusable at this speed:
+take the energy the flywheel gives up during a miss, divide by the number of
+firing strokes in the burst that follows, and you have the work per cycle.
+
+The method is sound. The firing-stroke count was not. It came from tachometer
+samples half a second apart, which cannot resolve a burst lasting a fraction of a
+second, and guessing 3.8 strokes where there were nearer 1.2 divides the answer
+by three.
+
+What made it convincing was a coincidence. 21 Nm and 2.6 bar is *exactly* what a
+real Fairbanks-Morse Z 1.5 HP makes, so a wrong number landed on an independent
+expectation and that read as confirmation. The lesson is that agreeing with what
+you expected is not evidence.
+
+Properly latched, the dyno gives **78.5 Nm and 5.5 hp**.
+
+### It is about 3.7 times as strong as the real thing
+
+9.9 bar BMEP is roughly 23 percent brake thermal efficiency. A real engine of
+this size and era made 2.6 bar and 1.5 hp.
+
+That gap is the simulator being generous, not the file being wrong. engine-sim
+has **no knock model**, so running 4.0:1 compression costs it almost nothing,
+while on a real 1910 engine the low compression is most of the reason it only
+made a horsepower and a half. The compression is correct, the fuel is correct,
+and the simulator simply does not charge for it.
 
 It overshoots its own governed speed by up to 15%. That is not a fault: the
 limiter tests the **instantaneous** crank speed, and a single cylinder with a
@@ -188,11 +211,17 @@ assume a car:
 
 **The clutch** was the worst of them. `CL_Nmax = E_Nmax * 1.33` assumes peak
 torque is about a third above the mean, which is true of a multi-cylinder engine
-whose power strokes overlap. This engine fires once every thirteen revolutions:
-its mean is 21 Nm but the measured peak is **158 Nm**, a pulse ratio of 7.5:1. So
-the clutch was rated at a sixth of what actually arrives and slipped on every
-single hit. Nothing downstream can feel right while that is happening. It is now
-a flat 250 Nm.
+whose power strokes overlap. On a single that fires once every thirteen
+revolutions it is not: the measured peak is **158 Nm** against a mean of 78.5, a
+pulse ratio of about **2:1**, and a good deal more than that instant to instant
+because the 158 is itself a filtered reading.
+
+At the time the clutch was fixed `E_Nmax` was still the wrong 21 Nm, so the
+formula was rating it at 28 Nm against a 158 Nm peak and it slipped on every
+single hit. Nothing downstream can feel right while that is happening. With the
+corrected 79 Nm the formula would give 105, which is still under the peak. Either
+way the answer is the same: **size the clutch off peak, not off the mean.** It is
+now a flat 250 Nm.
 
 **The brake** came out of a formula that sizes it to stop a car from 100 km/h in
 40 m, giving 1447 N against an engine that can only put 160 N through the belt in
@@ -242,7 +271,7 @@ needs `V_M` of about 11 kg.
 It had been 400, then 150, then 80, dropped each time because the engine could
 not pull the shop. Every one of those was too high for the same wrong reason:
 they were being read as weights. 80 kg was producing 23.4 kg.m2, seven times a
-real line shaft, which is why a 1.4 hp engine took minutes to wind it up.
+real line shaft, which is why the engine took minutes to wind it up.
 
 ### How the speed readout actually works
 
