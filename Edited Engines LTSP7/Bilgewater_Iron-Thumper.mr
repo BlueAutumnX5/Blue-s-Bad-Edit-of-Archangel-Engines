@@ -868,7 +868,7 @@ public node Engine {
 // Miscellaneous parameters start //
 
     engine engine(
-        name: "Sabar Type H",
+        name: "BISCo Iron-Thumper",
         starter_torque: SM_Ftq * units.Nm,
         starter_speed: SM_omega * units.rpm,
         redline: TACHO_REDLINE * units.rpm,

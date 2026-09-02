@@ -1,11 +1,18 @@
-# Sabar Type H
+# Bilgewater Iron-Thumper
 
 A **hit and miss** engine. One cylinder, 997 cc, governed to 500 rpm, driving a
 workshop line shaft off its own flywheel by flat belt.
 
-*Sabar* is Indonesian for **patient**. It fires about once every thirteen
-revolutions and spends the rest of its life coasting, which seemed worth naming
-it for. *Type H* for hit and miss.
+Built by the **Bilgewater Iron & Steel Co.** of **Duckburg, Calisota**, who made
+castings for anybody who asked and engines for anybody who insisted. The
+Iron-Thumper was their smallest, and the only one of their products that ever
+left the state in numbers.
+
+The dashboard says **BISCo Iron-Thumper**, because the foundry stamped its
+castings BISCo the way Fairbanks-Morse stamped F-M and International Harvester
+stamped IHC. It is also all that fits: the simulator appends the displacement to
+the name, and past about 20 characters the two run into each other. Everywhere
+outside the sim it is the Bilgewater Iron-Thumper in full.
 
 ## What a hit and miss engine is
 
@@ -267,5 +274,47 @@ rpm, against 23.2 predicted.
 
 ## The story
 
-*Not written yet - this file records what the engine is and where its numbers
-come from. The narrative belongs to BlueAutumnX5.*
+Bilgewater Iron & Steel never set out to build engines. They built castings, and
+they built them for whoever walked into the yard at Duckburg with a drawing and
+cash. Somewhere around the turn of the century a customer failed to collect an
+order of flywheels, and rather than weigh them in, the foundry built engines
+around them. That is the whole origin of the Iron-Thumper and it explains its one
+distinguishing feature, which is that the flywheels are far too big for it.
+
+Half the weight of the engine is in those two wheels. It is also the reason the
+thing works at all.
+
+Every shop that ever had one has the same story. Somebody new walks in, hears it
+miss, and says the engine is finished. It has been turning for the best part of a
+minute without firing: the flywheels going round, the exhaust just breathing, the
+whole thing apparently coasting to a death. Then it thumps twice, picks up, and
+goes quiet again. The new person stands there waiting for it to stop.
+
+It does not stop. It is not idling either, because it has no idle. It is waiting,
+with 47 kilos of Calisota iron already turning, for a reason to fire, and the
+governor decides when that is. Nobody else gets a vote. There is no throttle to
+get wrong, no timing to creep, no electronics to drown. There is a weight in the
+flywheel, an igniter with two contacts, and a mixer with a needle you set once a
+season and then leave alone.
+
+It burns roughly what it needs and nothing more, because the governor simply
+refuses to let it fire when it does not have to. That was the whole idea and it
+was a good one: an engine that idles by not running.
+
+One and a bit horsepower, which sounds like nothing until you notice it has been
+one and a bit horsepower every working day since before anyone in the building
+was born. Through the line shaft it drives whatever is belted up that week.
+
+The flywheels deserve room. They carry it through thirteen silent revolutions to
+the fourteenth loud one, and they are turning at waist height with nothing around
+them, which is why every one of these engines has a story attached to it and why
+the good ones are bolted to something that will not move. Bilgewater sold them
+without guards and considered the matter closed.
+
+Fifteen hundred revolutions an hour, most of them silent, and one thump in
+fourteen. It will outlast whoever bought it. Most of them have.
+
+---
+
+*Written by Claude at BlueAutumnX5's request, to his setting, and entirely his to
+rewrite. The numbers above it are measured. This part is not.*
