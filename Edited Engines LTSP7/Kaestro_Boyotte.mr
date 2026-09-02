@@ -82,8 +82,8 @@ label LICO_t(0.01)    // Engine speed limiter ignition cut-off duration. Units: 
 label FRIC_m(10.0)    // Global engine friction multiplier. engine-sim derives friction from bearing drag alone (a 0.0015 coefficient on component masses) and ignores piston rings, valvetrain and oil pumping, which dominate in a large cast-iron engine. Scaling the total is how this engine gets a believable idle speed. //
 label TACHO_REDLINE(3000.0)    // Redline. Determines at what speed the redline is drawn on the tachometer. Units: revolutions per minute. //
 
-label SM_omega(500.0)    // Starter speed. Units: Revolutions per minute. //
-label SM_Ftq(4000.0)    // Starter torque. Units: newton meters. //
+label SM_omega(250.0)    // Starter speed. Units: Revolutions per minute. This is a TARGET SPEED, not a limit: the starter is a velocity constraint that drives the crank toward this figure using up to SM_Ftq of authority (starter_motor.cpp - v_bias is the target, m_maxTorque only bounds the effort, and the limits are one-sided so it can push but never brake). Real diesels crank at 150-250 rpm; the old 500 was about twice what any starter turns. //
+label SM_Ftq(1200.0)    // Starter torque. Units: newton meters. Authority limit, not applied torque. The old 4000 was thirteen times this engine own 301 Nm peak and it flung the crank to 5000 rpm on the starter alone. Getting a 2444 cc single through one compression from rest at 21:1 needs roughly 1500-2000 Nm at the worst crank angle, so 1200 makes the starter labour into the first compression the way a big diesel does, rather than spinning it like a drill. //
 
 // Main Parameters End //
 
