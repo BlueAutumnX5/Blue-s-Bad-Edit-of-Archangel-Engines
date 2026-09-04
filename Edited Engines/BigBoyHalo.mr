@@ -51,11 +51,7 @@ private node mazda_r26b {
         throw: 0.5 * stroke,
         flywheel_mass: 5 * units.lb,
         mass: 5 * units.lb,
-<<<<<<< HEAD
-        friction_torque: 3.0 * units.lb_ft,
-=======
-        friction_torque: 5.0 * units.lb_ft,
->>>>>>> master
+        friction_torque: 2.5 * units.lb_ft,
         moment_of_inertia: 0.22986844776863666 * 0.2,
         position_x: 0.0,
         position_y: 0.0,
@@ -80,13 +76,8 @@ private node mazda_r26b {
 
     chevy_bbc_stock_intake intake(
         carburetor_cfm: 200.0,
-<<<<<<< HEAD
-        idle_flow_rate_cfm: 0.0328, //0.52, //0.33,
-        idle_throttle_plate_position: 0.9955 // 0.9945
-=======
         idle_flow_rate_cfm: 0.0493, //0.52, //0.33,
         idle_throttle_plate_position: 0.994 // 0.9945
->>>>>>> master
     )
 
     exhaust_system_parameters es_params(
