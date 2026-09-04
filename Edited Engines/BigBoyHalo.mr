@@ -134,16 +134,17 @@ private node mazda_r26b {
     )
 }
 
-label car_mass(1200 * units.kg)
+label car_mass(119 * units.kg)
 
-private node impreza {
+// 2019 Honda Supra GTR 150
+private node supra_gtr_150 {
     alias output __out:
         vehicle(
-            mass: 800 * units.kg,
-            drag_coefficient: 0.5,
-            cross_sectional_area: (72 * units.inch) * (56 * units.inch),
-            diff_ratio: 3.9,
-            tire_radius: 12 * units.inch,
+            mass: 119 * units.kg,                 // kerb weight
+            drag_coefficient: 0.6,                // estimate, not published
+            cross_sectional_area: (725 * units.mm) * (1102 * units.mm),  // overall width x height
+            diff_ratio: 9.562,                    // primary 75/23 x final drive 44/15
+            tire_radius: 11.807 * units.inch,     // rear 120/70-17
             rolling_resistance: 0.015 * car_mass * 9.81,
             stiffness: 50 * units.lb_ft / units.deg,
             damping: 15.0,
@@ -153,7 +154,7 @@ private node impreza {
         );
 }
 
-private node impreza_transmission {
+private node supra_gtr_150_transmission {
     alias output __out:
         transmission(
             max_clutch_torque: 700 * units.lb_ft,
@@ -163,18 +164,18 @@ private node impreza_transmission {
             clutch_damping: 2.0,
             simulate_flex: true
         )
-        .add_gear(5.000)
-        .add_gear(3.636)
-        .add_gear(2.375)
-        .add_gear(1.761)
-        .add_gear(1.346)
-        .add_gear(0.971);
+        .add_gear(3.083)   // 37/12
+        .add_gear(1.941)   // 33/17
+        .add_gear(1.500)   // 30/20
+        .add_gear(1.227)   // 27/22
+        .add_gear(1.041)   // 25/24
+        .add_gear(0.923);  // 24/26
 }
 
 public node main {
     set_engine(mazda_r26b())
-    set_vehicle(impreza())
-    set_transmission(impreza_transmission())
+    set_vehicle(supra_gtr_150())
+    set_transmission(supra_gtr_150_transmission())
 }
 
 main()
