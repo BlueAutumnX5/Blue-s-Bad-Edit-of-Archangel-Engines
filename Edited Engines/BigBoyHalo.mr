@@ -16,7 +16,7 @@ private node mazda_r26b {
     alias output __out: engine;
 
     wankel_engine engine(
-        name: "BIG BOI DORITO",
+        name: "BIG BOI DORITO 15K",
         starter_torque: 22 * units.lb_ft,
         starter_speed: 750 * units.rpm,
         redline: 15000 * units.rpm,
