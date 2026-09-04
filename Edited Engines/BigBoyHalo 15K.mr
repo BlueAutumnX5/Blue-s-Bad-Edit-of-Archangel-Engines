@@ -1,0 +1,181 @@
+import "engine_sim.mr"
+
+units units()
+constants constants()
+impulse_response_library ir_lib()
+label cycle(3 * 360 * units.deg)
+
+private node wires {
+    output wire1: ignition_wire();
+    output wire2: ignition_wire();
+    output wire3: ignition_wire();
+    output wire4: ignition_wire();
+}
+
+private node mazda_r26b {
+    alias output __out: engine;
+
+    wankel_engine engine(
+        name: "BIG BOI DORITO 15K",
+        starter_torque: 22 * units.lb_ft,
+        starter_speed: 750 * units.rpm,
+        redline: 15000 * units.rpm,
+        fuel: fuel(
+            max_burning_efficiency: 0.9,
+            max_dilution_effect: 1.5,
+            burning_efficiency_randomness: 1.0
+        ),
+        throttle_gamma: 4.0,
+        hf_gain: 0.01,
+        noise: 1.0,
+        jitter: 0.5,
+        simulation_frequency: 44100,
+        rotor_calculation_quality: 1024,
+        rotor_housing_resolution: 1024,
+        heat_transfer_coefficient: 200
+    )
+
+    wires wires()
+
+    label stroke(1 * units.cm)
+    label radius(10 * units.cm)
+    label depth(7 * units.cm)
+    label intake_port_start(130 * units.deg)
+    label intake_port_end(150 * units.deg)
+    label exhaust_port_start(220 * units.deg)
+    label exhaust_port_end(240 * units.deg)
+    label rotor_mass(5000 * units.g)
+    label rotor_I(disk_moment_of_inertia(mass: rotor_mass, radius: radius))
+
+    crankshaft c0(
+        throw: 0.5 * stroke,
+        flywheel_mass: 5 * units.lb,
+        mass: 5 * units.lb,
+        friction_torque: 2.5 * units.lb_ft,
+        moment_of_inertia: 0.22986844776863666 * 0.2,
+        position_x: 0.0,
+        position_y: 0.0,
+        tdc: 0.0
+    )
+
+    rod_journal rj0(angle: 0.0 * units.deg)
+    c0
+        .add_rod_journal(rj0)
+
+    engine.add_crankshaft(c0)
+
+    wankel_rotor rotor0(
+        mass: 5000 * units.g,
+        moment_of_inertia: rotor_I,
+        radius: radius,
+        crown_gear_radius: 3 * 0.5 * stroke,
+        angle: 60 * units.deg,
+        depth: depth,
+        depression_volume: 38 * units.cc
+    )
+
+    // Raw intake node rather than chevy_bbc_stock_intake: identical values,
+    // but the wrapper cannot pass molecular_afr.
+    intake intake(
+        plenum_volume: 2.0 * units.L,
+        plenum_cross_section_area: 100.0 * units.cm2,
+        intake_flow_rate: k_carb(200.0),
+        idle_flow_rate: k_carb(0.0792),
+        idle_throttle_plate_position: 0.994,
+        molecular_afr: 15.625,
+        throttle_gamma: 2.0,
+        runner_flow_rate: k_carb(300.0),
+        runner_length: 6.0 * units.inch,
+        velocity_decay: 1.0
+    )
+
+    exhaust_system_parameters es_params(
+        outlet_flow_rate: k_carb(550.0),
+        primary_tube_length: 10.0 * units.inch,
+        primary_flow_rate: k_carb(500.0),
+        velocity_decay: 1.0, //0.5
+        length: 100.0 * units.inch
+    )
+
+    exhaust_system exhaust0(
+        es_params,
+        length: (180 + 72.0) * units.inch,
+        audio_volume: 5.5,
+        impulse_response: ir_lib.minimal_muffling_02)
+
+    engine.add_rotor(
+        intake,
+        exhaust0,
+        rotor0,
+        rj0,
+        wires.wire1,
+        sound_attenuation: 1.0,
+        primary_length: 3 * units.inch,
+        intake_port: default_wankel_peripheral_port(intake_port_start, intake_port_end, k_carb(600.0)),
+        exhaust_port: default_wankel_peripheral_port(exhaust_port_start, exhaust_port_end, k_carb(900.0)),
+        intake_runner_cross_section_area: 12 * units.cm2,
+        exhaust_cross_section_area: 12 * units.cm2,
+        spark_plug_angle: 0
+    )
+
+    function timing_curve(1000 * units.rpm)
+    timing_curve
+        .add_sample(0000 * units.rpm, 20 * units.deg)
+        .add_sample(1000 * units.rpm, 20 * units.deg)
+        .add_sample(2000 * units.rpm, 30 * units.deg)
+        .add_sample(3000 * units.rpm, 50 * units.deg)
+        .add_sample(4000 * units.rpm, 50 * units.deg)
+
+    engine.add_ignition_module(
+        ignition_module(timing_curve: timing_curve, rev_limit: 15000 * units.rpm, limiter_duration: 0.01)
+            .connect_wire(wires.wire1, (0.0 / 12.0) * cycle)
+            .connect_wire(wires.wire1, (4.0 / 12.0) * cycle)
+            .connect_wire(wires.wire1, (8.0 / 12.0) * cycle)
+    )
+}
+
+label car_mass(119 * units.kg)
+
+// 2019 Honda Supra GTR 150
+private node supra_gtr_150 {
+    alias output __out:
+        vehicle(
+            mass: 119 * units.kg,                 // kerb weight
+            drag_coefficient: 0.6,                // estimate, not published
+            cross_sectional_area: (725 * units.mm) * (1102 * units.mm),  // overall width x height
+            diff_ratio: 9.562,                    // primary 75/23 x final drive 44/15
+            tire_radius: 11.807 * units.inch,     // rear 120/70-17
+            rolling_resistance: 0.015 * car_mass * 9.81,
+            stiffness: 50 * units.lb_ft / units.deg,
+            damping: 15.0,
+            max_flex: 5 * units.deg,
+            limit_flex: true,
+            simulate_flex: true
+        );
+}
+
+private node supra_gtr_150_transmission {
+    alias output __out:
+        transmission(
+            max_clutch_torque: 700 * units.lb_ft,
+            max_clutch_flex: 5 * units.deg,
+            limit_clutch_flex: true,
+            clutch_stiffness: 50 * units.lb_ft / units.deg,
+            clutch_damping: 2.0,
+            simulate_flex: true
+        )
+        .add_gear(3.083)   // 37/12
+        .add_gear(1.941)   // 33/17
+        .add_gear(1.500)   // 30/20
+        .add_gear(1.227)   // 27/22
+        .add_gear(1.041)   // 25/24
+        .add_gear(0.923);  // 24/26
+}
+
+public node main {
+    set_engine(mazda_r26b())
+    set_vehicle(supra_gtr_150())
+    set_transmission(supra_gtr_150_transmission())
+}
+
+main()
