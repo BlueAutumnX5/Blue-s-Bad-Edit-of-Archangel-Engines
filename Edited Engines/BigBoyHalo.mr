@@ -111,10 +111,10 @@ private node mazda_r26b {
         wires.wire1,
         sound_attenuation: 1.0,
         primary_length: 3 * units.inch,
-        intake_port: default_wankel_peripheral_port(intake_port_start, intake_port_end, k_carb(200.0)),
-        exhaust_port: default_wankel_peripheral_port(exhaust_port_start, exhaust_port_end, k_carb(300.0)),
-        intake_runner_cross_section_area: 4 * units.cm2,
-        exhaust_cross_section_area: 4 * units.cm2,
+        intake_port: default_wankel_peripheral_port(intake_port_start, intake_port_end, k_carb(600.0)),
+        exhaust_port: default_wankel_peripheral_port(exhaust_port_start, exhaust_port_end, k_carb(900.0)),
+        intake_runner_cross_section_area: 12 * units.cm2,
+        exhaust_cross_section_area: 12 * units.cm2,
         spark_plug_angle: 0
     )
 
